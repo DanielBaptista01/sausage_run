@@ -1,5 +1,24 @@
 #include "jogo.h"
 
+/*
+ * Alguns carregadores de bitmap/addons podem alterar o bitmap alvo ou o
+ * transform atual. Os primitives do Allegro esperam que exista um target e
+ * um transform validos. Restauramos explicitamente o backbuffer antes de
+ * qualquer desenho para evitar al_get_current_transform() == NULL.
+ */
+static void prepararContextoGrafico(ALLEGRO_DISPLAY* display)
+{
+    if (!display) return;
+
+    al_set_target_backbuffer(display);
+
+    ALLEGRO_TRANSFORM transform;
+    al_identity_transform(&transform);
+    al_use_transform(&transform);
+
+    al_reset_clipping_rectangle();
+}
+
 int main(void)
 {
     srand((unsigned int)time(NULL));
@@ -36,6 +55,8 @@ int main(void)
         return -1;
     }
 
+    prepararContextoGrafico(display);
+
     al_set_window_title(display,"Sausage Run");
     al_register_event_source(fila,al_get_display_event_source(display));
     al_register_event_source(fila,al_get_timer_event_source(timer));
@@ -66,6 +87,9 @@ int main(void)
         al_shutdown_primitives_addon();
         return -1;
     }
+
+    /* O fallback WIC cria/locka bitmaps. Garante novamente o contexto do display. */
+    prepararContextoGrafico(display);
 
     if(audioInstalado)criarRecursosAudio(&audio);
     configurarFases(fases,&recursos);
@@ -170,12 +194,19 @@ int main(void)
         if(redesenhar&&al_is_event_queue_empty(fila))
         {
             redesenhar=false;
+
+            /* Nunca desenhar primitives sem um target/transform valido. */
+            prepararContextoGrafico(display);
+
             if(estado==JOGO_RODANDO)
                 desenharCena(&fases[faseAtual],&recursos,&scooby,&maria,&bola,&som,debug,vidas,faseAtual);
             else
                 desenharTelaFinal(estado);
         }
     }
+
+    /* Deixa o backbuffer como alvo enquanto os bitmaps ainda existem. */
+    prepararContextoGrafico(display);
 
     destruirRecursosAudio(&audio);
     destruirRecursos(&recursos,&scooby,&maria);
