@@ -5,11 +5,13 @@
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_font.h>
 
 #include <stdbool.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define LARGURA_TELA 1280
@@ -25,12 +27,12 @@
 #define MAPA_X ((LARGURA_TELA - MAPA_TELA_W) / 2.0f)
 #define MAPA_Y 0.0f
 
-#define FRAME_SPRITE 313
 #define QTD_FRAMES 4
+#define QTD_DIRECOES 4
 
-#define MAX_OBJETOS 28
-#define MAX_OBSTACULOS 36
-#define MAX_WAYPOINTS 8
+#define MAX_OBJETOS 32
+#define MAX_OBSTACULOS 48
+#define MAX_WAYPOINTS 10
 #define MAX_CAMINHO 512
 
 #define TAM_CELULA 40
@@ -40,11 +42,20 @@
 
 #define QTD_FASES 4
 #define QTD_CORES_BOLA 5
+#define SEED_DEBUG 1337u
 
 typedef enum { DIRECAO_DOWN = 0, DIRECAO_UP, DIRECAO_LEFT, DIRECAO_RIGHT } Direcao;
 typedef enum { MARIA_PATRULHA, MARIA_INVESTIGAR, MARIA_PERSEGUIR, MARIA_PROCURAR, MARIA_CAPTURAR } EstadoMaria;
 typedef enum { SOM_NENHUM, SOM_CORRIDA, SOM_LATIDO, SOM_INTERACAO } TipoSom;
-typedef enum { JOGO_RODANDO, JOGO_VITORIA, JOGO_GAME_OVER } EstadoJogo;
+typedef enum {
+    JOGO_RODANDO,
+    JOGO_TRANSICAO_FASE,
+    JOGO_PAUSADO,
+    JOGO_VITORIA,
+    JOGO_GAME_OVER
+} EstadoJogo;
+typedef enum { SAIDA_PORTA, SAIDA_ESCADA } TipoSaida;
+typedef enum { TRANSICAO_APROXIMAR, TRANSICAO_FADE_OUT, TRANSICAO_FADE_IN } EtapaTransicao;
 
 typedef struct { float x, y; } Ponto;
 typedef struct { float x, y, largura, altura; } Retangulo;
@@ -52,8 +63,12 @@ typedef struct { float x, y, largura, altura; } Retangulo;
 typedef struct {
     ALLEGRO_BITMAP* imagem;
     int frameAtual;
+    int frameW, frameH;
+    int qtdFrames, qtdDirecoes;
     float acumulador;
     float tempoFrame;
+    float anchorX, anchorY;
+    int ultimoFrameSom;
 } Animacao;
 
 typedef struct {
@@ -76,14 +91,18 @@ typedef struct {
 
 typedef struct {
     int sx, sy, sw, sh;
+    int insetFonte;
     float mapaX, mapaY, escala;
     float colX, colY, colW, colH;
+    float anchorY;
     bool colide, bloqueiaVisao;
 } ObjetoMapa;
 
 typedef struct {
     ALLEGRO_BITMAP* fundo;
     ALLEGRO_BITMAP* folhaObjetos;
+    const char* caminhoFundo;
+    const char* caminhoObjetos;
     const char* nome;
     ObjetoMapa objetos[MAX_OBJETOS];
     int quantidadeObjetos;
@@ -94,13 +113,16 @@ typedef struct {
     Ponto spawnsBola[3];
     int quantidadeSpawnsBola;
     Ponto spawnScooby, spawnMaria;
+    Retangulo areaJogavel;
     Retangulo saida;
+    Ponto alvoTransicao;
+    TipoSaida tipoSaida;
 } Fase;
 
 typedef struct {
-    ALLEGRO_BITMAP* fundos[QTD_FASES];
-    ALLEGRO_BITMAP* folhasObjetos[QTD_FASES];
     ALLEGRO_BITMAP* bolas;
+    ALLEGRO_FONT* fonte;
+    int faseCarregada;
 } RecursosMapa;
 
 typedef struct {
@@ -125,7 +147,6 @@ typedef struct {
     bool movendo, correndo, latindo, mordendo;
     bool carregandoBola, coletaPendente;
     float cooldownSomCorrida;
-    float cooldownPassoAudio;
     Animacao idle, walk, run, bark, bite;
     Animacao carregar[QTD_CORES_BOLA];
 } Scooby;
@@ -134,9 +155,9 @@ typedef struct {
     Personagem corpo;
     Direcao direcaoSprite;
     EstadoMaria estado;
-    EstadoMaria estadoAudioAnterior;
     float alcanceVisao, anguloVisao, alcanceAudicao;
     float alvoX, alvoY;
+    float alvoNavegavelX, alvoNavegavelY;
     float ultimaPosicaoVistaX, ultimaPosicaoVistaY;
     int waypointAtual;
     float tempoBusca, tempoNovoAlvoBusca;
@@ -145,7 +166,6 @@ typedef struct {
     float tempoRecalcularCaminho;
     float ultimoAlvoCaminhoX, ultimoAlvoCaminhoY;
     bool movendo, capturaConcluida;
-    float cooldownPassoAudio;
     Animacao idle, walk, run, pick;
 } Maria;
 
@@ -154,6 +174,14 @@ typedef struct {
     int cor;
     bool coletada;
 } Bola;
+
+typedef struct {
+    EtapaTransicao etapa;
+    float tempo;
+    float alphaFade;
+    Ponto alvo;
+    bool faseTrocada;
+} TransicaoFase;
 
 extern const char* NOMES_CORES[QTD_CORES_BOLA];
 
@@ -164,13 +192,15 @@ float mapaParaTelaY(float y);
 bool pontoDentroRetangulo(float x, float y, Retangulo r);
 bool pontoDentroObstaculo(float x, float y, Obstaculo o);
 Direcao direcaoSpritePorMovimento(float dx, float dy, Direcao atual);
-void limitarAoMapa(Personagem* p);
+bool personagemDentroArea(const Personagem* p, float x, float y, const Fase* fase);
 bool personagemColide(const Personagem* p, float novoX, float novoY, const Fase* fase);
 void moverPersonagem(Personagem* p, float dx, float dy, const Fase* fase);
 void resetarPersonagensNaFase(Scooby* scooby, Maria* maria, Bola* bola,
                               const Fase* fase, int faseAtual, bool novaCor);
 bool chegouNaSaidaComBola(const Scooby* scooby, const Fase* fase);
 
+bool inicializarRaizRecursos(void);
+bool resolverCaminhoRecurso(const char* relativo, char* saida, size_t tamanho);
 ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho);
 bool carregarAnimacao(Animacao* animacao, const char* caminho, float tempoFrame);
 void reiniciarAnimacao(Animacao* animacao);
@@ -178,22 +208,27 @@ void atualizarAnimacaoLoop(Animacao* animacao, float dt);
 bool atualizarAnimacaoUmaVez(Animacao* animacao, float dt);
 void desenharAnimacao(const Animacao* animacao, Direcao direcao, float x, float y, float escala);
 bool carregarRecursosMapa(RecursosMapa* r);
+bool carregarRecursosFase(RecursosMapa* r, Fase fases[QTD_FASES], int indiceFase);
 bool carregarSprites(Scooby* scooby, Maria* maria);
-void destruirRecursos(RecursosMapa* r, Scooby* scooby, Maria* maria);
+void descarregarFase(Fase* fase);
+void destruirRecursos(RecursosMapa* r, Fase fases[QTD_FASES], Scooby* scooby, Maria* maria);
 
 bool criarRecursosAudio(RecursosAudio* audio);
 void tocarEfeito(ALLEGRO_SAMPLE* sample, float ganho);
 void tocarEfeitoPosicional(ALLEGRO_SAMPLE* sample, float x, float ganho);
 void destruirRecursosAudio(RecursosAudio* audio);
 
-void configurarFases(Fase fases[QTD_FASES], RecursosMapa* recursos);
+void configurarFases(Fase fases[QTD_FASES]);
 void desenharObjeto(const Fase* fase, const ObjetoMapa* obj);
 float baseYObjeto(const ObjetoMapa* obj);
+bool validarObjetosFase(const Fase* fase);
 
 void emitirSom(EventoSom* som, TipoSom tipo, float x, float y, float alcance);
 void atualizarSom(EventoSom* som, float dt);
 bool mariaOuveSom(const Maria* maria, const EventoSom* som);
+bool linhaVisaoLivre(const Fase* fase, float x1, float y1, float x2, float y2);
 bool mariaVeScooby(const Maria* maria, const Scooby* scooby, const Fase* fase);
+bool mariaPodeCapturar(const Maria* maria, const Scooby* scooby, const Fase* fase);
 void atualizarMaria(Maria* maria, const Scooby* scooby, EventoSom* som,
                     const Fase* fase, RecursosAudio* audio, float dt);
 
@@ -203,10 +238,13 @@ void iniciarMordida(Scooby* scooby, const Bola* bola, RecursosAudio* audio);
 void atualizarScooby(Scooby* scooby, const ALLEGRO_KEYBOARD_STATE* teclado,
                      const Fase* fase, Bola* bola, EventoSom* som,
                      RecursosAudio* audio, float dt);
+void atualizarScoobyTransicao(Scooby* scooby, const Fase* fase, const Bola* bola, Ponto alvo, float dt);
 
 void desenharCena(const Fase* fase, const RecursosMapa* recursos,
                   const Scooby* scooby, const Maria* maria, const Bola* bola,
-                  const EventoSom* som, bool debug, int vidas, int faseAtual);
-void desenharTelaFinal(EstadoJogo estado);
+                  const EventoSom* som, bool debug, int vidas, int faseAtual,
+                  EstadoJogo estado, float alphaFade, float tempoTutorial);
+void desenharTelaFinal(EstadoJogo estado, const RecursosMapa* recursos);
+void desenharCarregando(ALLEGRO_DISPLAY* display, ALLEGRO_FONT* fonte);
 
 #endif
