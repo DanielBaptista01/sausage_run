@@ -14,7 +14,8 @@ int main(void)
     {
         if(!al_reserve_samples(24))
         {
-            printf("Aviso: nao foi possivel reservar vozes de audio.\n");
+            printf("Aviso: nao foi possivel reservar vozes de audio. O jogo continuara sem som.\n");
+            al_uninstall_audio();
             audioInstalado=false;
         }
     }
@@ -23,7 +24,17 @@ int main(void)
     ALLEGRO_DISPLAY* display=al_create_display(LARGURA_TELA,ALTURA_TELA);
     ALLEGRO_TIMER* timer=al_create_timer(1.0/FPS);
     ALLEGRO_EVENT_QUEUE* fila=al_create_event_queue();
-    if(!display||!timer||!fila){printf("Erro ao criar display/timer/fila.\n");return -1;}
+    if(!display||!timer||!fila)
+    {
+        printf("Erro ao criar display/timer/fila.\n");
+        if(fila)al_destroy_event_queue(fila);
+        if(timer)al_destroy_timer(timer);
+        if(display)al_destroy_display(display);
+        if(audioInstalado)al_uninstall_audio();
+        al_shutdown_image_addon();
+        al_shutdown_primitives_addon();
+        return -1;
+    }
 
     al_set_window_title(display,"Sausage Run");
     al_register_event_source(fila,al_get_display_event_source(display));
@@ -46,9 +57,14 @@ int main(void)
     {
         printf("Nao foi possivel carregar todos os recursos obrigatorios.\n");
         destruirRecursos(&recursos,&scooby,&maria);
-        al_destroy_event_queue(fila);al_destroy_timer(timer);al_destroy_display(display);
+        destruirRecursosAudio(&audio);
+        al_destroy_event_queue(fila);
+        al_destroy_timer(timer);
+        al_destroy_display(display);
         if(audioInstalado)al_uninstall_audio();
-        al_shutdown_image_addon();al_shutdown_primitives_addon();return -1;
+        al_shutdown_image_addon();
+        al_shutdown_primitives_addon();
+        return -1;
     }
 
     if(audioInstalado)criarRecursosAudio(&audio);
@@ -163,7 +179,9 @@ int main(void)
 
     destruirRecursosAudio(&audio);
     destruirRecursos(&recursos,&scooby,&maria);
-    al_destroy_event_queue(fila);al_destroy_timer(timer);al_destroy_display(display);
+    al_destroy_event_queue(fila);
+    al_destroy_timer(timer);
+    al_destroy_display(display);
 
     if(audioInstalado)al_uninstall_audio();
     al_shutdown_image_addon();
