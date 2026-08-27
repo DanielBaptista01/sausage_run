@@ -26,7 +26,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"><ClCompile><WarningLevel>Level3</WarningLevel><SDLCheck>true</SDLCheck><PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions><ConformanceMode>true</ConformanceMode></ClCompile><Link><SubSystem>Console</SubSystem><GenerateDebugInformation>true</GenerateDebugInformation></Link><Manifest><EnableSegmentHeap>true</EnableSegmentHeap></Manifest></ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'"><ClCompile><WarningLevel>Level3</WarningLevel><FunctionLevelLinking>true</FunctionLevelLinking><IntrinsicFunctions>true</IntrinsicFunctions><SDLCheck>true</SDLCheck><PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions><ConformanceMode>true</ConformanceMode></ClCompile><Link><SubSystem>Console</SubSystem><GenerateDebugInformation>true</GenerateDebugInformation></Link><Manifest><EnableSegmentHeap>true</EnableSegmentHeap></Manifest></ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.c" /><ClCompile Include="util.c" /><ClCompile Include="recursos.c" /><ClCompile Include="fase.c" /><ClCompile Include="ia.c" /><ClCompile Include="scooby.c" /><ClCompile Include="render.c" />
+    <ClCompile Include="main.c" /><ClCompile Include="util.c" /><ClCompile Include="recursos.c" /><ClCompile Include="fase.c" /><ClCompile Include="ia.c" /><ClCompile Include="scooby.c" /><ClCompile Include="render.c" /><ClCompile Include="audio.c" />
   </ItemGroup>
   <ItemGroup><ClInclude Include="jogo.h" /><ClInclude Include="quarto_objetos_data.h" /></ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" /><ImportGroup Label="ExtensionTargets" />
