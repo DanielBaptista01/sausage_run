@@ -127,7 +127,6 @@ bool carregarRecursosMapa(RecursosMapa* r)
 
 void descarregarFase(Fase* f)
 {
-<<<<<<< HEAD
     if (!f) return;
 
     if (f->fundo)
@@ -218,7 +217,7 @@ bool carregarRecursosFase(RecursosMapa* r,
         return false;
     }
 
-=======
+
     if (!carregarAnimacao(&s->idle, "ScoobySprites/idle.png", 0.20f)) return false;
     if (!carregarAnimacao(&s->walk, "ScoobySprites/walk.png", 0.12f)) return false;
     if (!carregarAnimacao(&s->run, "ScoobySprites/run.png", 0.085f)) return false;
@@ -236,7 +235,7 @@ bool carregarRecursosFase(RecursosMapa* r,
     if (!carregarAnimacao(&m->walk, "mariaSprites/walk.png", 0.13f)) return false;
     if (!carregarAnimacao(&m->run, "mariaSprites/run.png", 0.095f)) return false;
     if (!carregarAnimacao(&m->pick, "mariaSprites/pick.png", 0.11f)) return false;
->>>>>>> 4019a8a (atualização)
+
     return true;
 }
 
