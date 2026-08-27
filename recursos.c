@@ -127,6 +127,7 @@ bool carregarRecursosMapa(RecursosMapa* r)
 
 void descarregarFase(Fase* f)
 {
+<<<<<<< HEAD
     if (!f) return;
 
     if (f->fundo)
@@ -217,6 +218,25 @@ bool carregarRecursosFase(RecursosMapa* r,
         return false;
     }
 
+=======
+    if (!carregarAnimacao(&s->idle, "ScoobySprites/idle.png", 0.20f)) return false;
+    if (!carregarAnimacao(&s->walk, "ScoobySprites/walk.png", 0.12f)) return false;
+    if (!carregarAnimacao(&s->run, "ScoobySprites/run.png", 0.085f)) return false;
+    if (!carregarAnimacao(&s->bark, "ScoobySprites/bark.png", 0.085f)) return false;
+    if (!carregarAnimacao(&s->bite, "ScoobySprites/bite.png", 0.080f)) return false;
+    static const char* carry[QTD_CORES_BOLA] = {
+    "ScoobySprites/littleBalls/yellow_dog.png",
+    "ScoobySprites/littleBalls/green_dog.png",
+    "ScoobySprites/littleBalls/purple_dog.png",
+    "ScoobySprites/littleBalls/blue_dog.png",
+    "ScoobySprites/littleBalls/red_dog.png"
+    };
+    for (int i = 0; i < QTD_CORES_BOLA; i++) if (!carregarAnimacao(&s->carregar[i], carry[i], 0.14f)) return false;
+    if (!carregarAnimacao(&m->idle, "mariaSprites/idle.png", 0.20f)) return false;
+    if (!carregarAnimacao(&m->walk, "mariaSprites/walk.png", 0.13f)) return false;
+    if (!carregarAnimacao(&m->run, "mariaSprites/run.png", 0.095f)) return false;
+    if (!carregarAnimacao(&m->pick, "mariaSprites/pick.png", 0.11f)) return false;
+>>>>>>> 4019a8a (atualização)
     return true;
 }
 

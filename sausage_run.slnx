@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="sausage_run.vcxproj" Id="1fc62d45-888a-48ed-b68f-0c186ed6a13a" />
+</Solution>

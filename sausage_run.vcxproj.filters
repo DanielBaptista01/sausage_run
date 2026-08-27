@@ -1,22 +1,678 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Arquivos de Origem"><UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier><Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions></Filter>
-    <Filter Include="Arquivos de Cabeçalho"><UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier><Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions></Filter>
-    <Filter Include="Arquivos de Recurso"><UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier><Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions></Filter>
+    <Filter Include="Arquivos de Origem">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Arquivos de Cabeçalho">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Arquivos de Recurso">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.c"><Filter>Arquivos de Origem</Filter></ClCompile>
-    <ClCompile Include="util.c"><Filter>Arquivos de Origem</Filter></ClCompile>
-    <ClCompile Include="recursos.c"><Filter>Arquivos de Origem</Filter></ClCompile>
-    <ClCompile Include="fase.c"><Filter>Arquivos de Origem</Filter></ClCompile>
-    <ClCompile Include="ia.c"><Filter>Arquivos de Origem</Filter></ClCompile>
-    <ClCompile Include="scooby.c"><Filter>Arquivos de Origem</Filter></ClCompile>
-    <ClCompile Include="render.c"><Filter>Arquivos de Origem</Filter></ClCompile>
-    <ClCompile Include="audio.c"><Filter>Arquivos de Origem</Filter></ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+    <ClCompile Include="util.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+    <ClCompile Include="recursos.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+    <ClCompile Include="fase.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+    <ClCompile Include="ia.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+    <ClCompile Include="scooby.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+    <ClCompile Include="render.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+    <ClCompile Include="audio.c">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="jogo.h"><Filter>Arquivos de Cabeçalho</Filter></ClInclude>
-    <ClInclude Include="quarto_objetos_data.h"><Filter>Arquivos de Cabeçalho</Filter></ClInclude>
+    <ClInclude Include="jogo.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="quarto_objetos_data.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\internal\aintern_primitives_types.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\internal\alconfig.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\gl_ext_alias.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\gl_ext_api.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\gl_ext_defs.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\gl_ext_list.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\glx_ext_alias.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\glx_ext_api.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\glx_ext_defs.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\glx_ext_list.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\wgl_ext_alias.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\wgl_ext_api.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\wgl_ext_defs.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\GLext\wgl_ext_list.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\opengl\gl_ext.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alandroid.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alandroidcfg.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\albcc32.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\aliphone.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\aliphonecfg.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\allegro_sdl_config.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\almngw32.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\almsvc.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alosx.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alosxcfg.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alplatf.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alraspberrypi.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alraspberrypicfg.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alucfg.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alunix.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alwatcom.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\alwin.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\astdbool.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\platform\astdint.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\alcompat.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_acodec.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_audio.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_color.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_direct3d.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_font.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_image.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_memfile.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_native_dialog.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_opengl.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_physfs.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_primitives.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_ttf.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_video.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro_windows.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\allegro5.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\altime.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\base.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\bitmap.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\bitmap_draw.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\bitmap_io.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\bitmap_lock.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\blender.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\clipboard.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\color.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\config.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\cpu.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\debug.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\display.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\drawing.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\error.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\events.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\file.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\fixed.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\fmaths.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\fshook.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\fullscreen_mode.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\haptic.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\joystick.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\keyboard.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\keycodes.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\memory.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\monitor.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\mouse.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\mouse_cursor.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\path.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\render_state.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\shader.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\system.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\threads.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\timer.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\tls.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\touch_input.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\transformations.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\utf8.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\FLAC\all.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\FLAC\assert.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\FLAC\callback.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\FLAC\export.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\FLAC\format.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\FLAC\metadata.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\FLAC\ordinals.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\FLAC\stream_decoder.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\FLAC\stream_encoder.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\dlg\dlg.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\dlg\output.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\config\ftconfig.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\config\ftheader.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\config\ftmodule.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\config\ftoption.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\config\ftstdlib.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\config\integer-types.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\config\mac-support.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\config\public-macros.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\freetype.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftadvanc.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftbbox.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftbdf.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftbitmap.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftbzip2.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftcache.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftchapters.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftcid.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftcolor.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftdriver.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\fterrdef.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\fterrors.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftfntfmt.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftgasp.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftglyph.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftgxval.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftgzip.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftimage.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftincrem.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftlcdfil.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftlist.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftlogging.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftlzw.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftmac.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftmm.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftmodapi.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftmoderr.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftotval.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftoutln.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftparams.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftpfr.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftrender.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftsizes.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftsnames.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftstroke.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftsynth.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftsystem.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\fttrigon.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\fttypes.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ftwinfnt.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\otsvg.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\t1tables.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\ttnameid.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\tttables.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\freetype\tttags.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\freetype2\ft2build.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt.hpp">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_config.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_ext.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_ext.hpp">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_stream_callbacks_buffer.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_stream_callbacks_fd.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_stream_callbacks_file.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_stream_callbacks_file_mingw.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_stream_callbacks_file_msvcrt.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_stream_callbacks_file_posix.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_stream_callbacks_file_posix_lfs64.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libopenmpt\libopenmpt_version.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libpng16\png.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libpng16\pngconf.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\libpng16\pnglibconf.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\ogg\config_types.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\ogg\ogg.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\ogg\os_types.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\opus\opus.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\opus\opus_defines.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\opus\opus_multistream.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\opus\opus_projection.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\opus\opus_types.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\opus\opusfile.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\theora\codec.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\theora\theora.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\theora\theoradec.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\vorbis\codec.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\vorbis\vorbisenc.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\vorbis\vorbisfile.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\webp\sharpyuv\sharpyuv.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\webp\sharpyuv\sharpyuv_csp.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\webp\decode.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\webp\demux.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\webp\encode.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\webp\mux_types.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\webp\types.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\dumb.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\jconfig.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\jerror.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\jmorecfg.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\jpeglib.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\minimp3.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\minimp3_ex.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\physfs.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\png.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\pngconf.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\pnglibconf.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\zconf.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\AllegroDeps.1.16.0\build\native\include\zlib.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="packages\Allegro.5.2.11.3\build\native\include\allegro5\inline\fmaths.inl">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </None>
   </ItemGroup>
 </Project>
