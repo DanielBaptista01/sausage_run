@@ -131,8 +131,8 @@ static void cozinha(Fase* f)
 
     f->spawnScooby=(Ponto){mapaParaTelaX(705),mapaParaTelaY(850)};
     f->spawnMaria=(Ponto){mapaParaTelaX(1015),mapaParaTelaY(550)};
-    waypoint(f,300,350);waypoint(f,650,340);waypoint(f,1030,390);waypoint(f,1040,720);waypoint(f,680,790);waypoint(f,300,750);
-    spawnBola(f,610,520);spawnBola(f,900,680);spawnBola(f,570,790);spawnBola(f,1030,610);
+    waypoint(f,600,450);waypoint(f,800,450);waypoint(f,1050,500);waypoint(f,1100,720);waypoint(f,750,800);waypoint(f,450,820);
+    spawnBola(f,400,450);spawnBola(f,650,500);spawnBola(f,1150,600);spawnBola(f,850,850);
 }
 
 static void sala(Fase* f)
@@ -153,9 +153,9 @@ static void sala(Fase* f)
     objeto(f,485,689,256,386,720,735,.60,.20,.72,.60,.25,true,false,false,2,9);
 
     f->spawnScooby=(Ponto){mapaParaTelaX(420),mapaParaTelaY(770)};
-    f->spawnMaria=(Ponto){mapaParaTelaX(850),mapaParaTelaY(430)};
-    waypoint(f,360,360);waypoint(f,690,350);waypoint(f,1040,370);waypoint(f,1030,680);waypoint(f,720,800);waypoint(f,330,720);
-    spawnBola(f,900,680);spawnBola(f,1050,800);spawnBola(f,360,650);spawnBola(f,760,560);
+    f->spawnMaria=(Ponto){mapaParaTelaX(800),mapaParaTelaY(500)};
+    waypoint(f,500,420);waypoint(f,650,500);waypoint(f,900,500);waypoint(f,900,650);waypoint(f,750,780);waypoint(f,400,700);
+    spawnBola(f,250,350);spawnBola(f,600,400);spawnBola(f,1200,550);spawnBola(f,950,750);
 }
 
 static void banheiro(Fase* f)
@@ -177,7 +177,7 @@ static void banheiro(Fase* f)
 
     f->spawnScooby=(Ponto){mapaParaTelaX(460),mapaParaTelaY(820)};
     f->spawnMaria=(Ponto){mapaParaTelaX(835),mapaParaTelaY(540)};
-    waypoint(f,500,450);waypoint(f,800,410);waypoint(f,1100,430);waypoint(f,1080,700);waypoint(f,760,820);waypoint(f,450,760);
+    waypoint(f,500,450);waypoint(f,750,450);waypoint(f,950,450);waypoint(f,1000,650);waypoint(f,850,700);waypoint(f,500,720);
     spawnBola(f,850,650);spawnBola(f,560,780);spawnBola(f,780,560);spawnBola(f,980,650);
 }
 
@@ -199,10 +199,10 @@ static void quarto(Fase* f)
     objeto(f,240,510,280,135,570,760,.85,.00,.72,1.00,.25,false,false,false,0,9);
     objeto(f,560,510,145,135,900,790,.82,.08,.45,.84,.53,true,false,false,0,10);
 
-    f->spawnScooby=(Ponto){mapaParaTelaX(420),mapaParaTelaY(865)};
-    f->spawnMaria=(Ponto){mapaParaTelaX(860),mapaParaTelaY(465)};
-    waypoint(f,390,400);waypoint(f,700,390);waypoint(f,1040,410);waypoint(f,1080,690);waypoint(f,780,840);waypoint(f,420,720);
-    spawnBola(f,700,590);spawnBola(f,1010,720);spawnBola(f,520,730);spawnBola(f,830,820);
+    f->spawnScooby=(Ponto){mapaParaTelaX(450),mapaParaTelaY(500)};
+    f->spawnMaria=(Ponto){mapaParaTelaX(900),mapaParaTelaY(450)};
+    waypoint(f,450,430);waypoint(f,700,430);waypoint(f,1000,430);waypoint(f,1050,650);waypoint(f,750,820);waypoint(f,350,700);
+    spawnBola(f,650,500);spawnBola(f,1000,550);spawnBola(f,500,550);spawnBola(f,1050,800);
 }
 
 void configurarFases(Fase fases[QTD_FASES])
