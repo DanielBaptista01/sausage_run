@@ -5,11 +5,16 @@ static bool g_raizInicializada = false;
 
 bool inicializarRaizRecursos(void)
 {
-    if (g_raizInicializada) return true;
+    if (g_raizInicializada)
+        return true;
 
     const char* candidatos[] = {
-        "", "../", "../../", "../../../",
-        "../../../../", "../../../../../"
+        "",
+        "../",
+        "../../",
+        "../../../",
+        "../../../../",
+        "../../../../../"
     };
 
     char teste[1024];
@@ -18,15 +23,18 @@ bool inicializarRaizRecursos(void)
          i < (int)(sizeof(candidatos) / sizeof(candidatos[0]));
          i++)
     {
-        snprintf(teste, sizeof(teste),
-                 "%smapa/cozinha.png", candidatos[i]);
+        snprintf(teste,
+                 sizeof(teste),
+                 "%smapa/cozinha.png",
+                 candidatos[i]);
 
         if (!al_filename_exists(teste))
             continue;
 
         snprintf(g_raizRecursos,
                  sizeof(g_raizRecursos),
-                 "%s", candidatos[i]);
+                 "%s",
+                 candidatos[i]);
 
         g_raizInicializada = true;
 
@@ -42,7 +50,9 @@ bool inicializarRaizRecursos(void)
            atual ? ": " : ".",
            atual ? atual : "");
 
-    if (atual) al_free(atual);
+    if (atual)
+        al_free(atual);
+
     return false;
 }
 
@@ -50,12 +60,19 @@ bool resolverCaminhoRecurso(const char* relativo,
                             char* saida,
                             size_t tamanho)
 {
-    if (!relativo || !saida || tamanho == 0 ||
+    if (!relativo ||
+        !saida ||
+        tamanho == 0 ||
         !inicializarRaizRecursos())
+    {
         return false;
+    }
 
-    int n = snprintf(saida, tamanho,
-                     "%s%s", g_raizRecursos, relativo);
+    int n = snprintf(saida,
+                     tamanho,
+                     "%s%s",
+                     g_raizRecursos,
+                     relativo);
 
     return n > 0 && (size_t)n < tamanho;
 }
@@ -64,9 +81,12 @@ ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho)
 {
     char absoluto[1024];
 
-    if (!resolverCaminhoRecurso(
-            caminho, absoluto, sizeof(absoluto)))
+    if (!resolverCaminhoRecurso(caminho,
+                                absoluto,
+                                sizeof(absoluto)))
+    {
         return NULL;
+    }
 
     if (!al_filename_exists(absoluto))
     {
@@ -75,12 +95,14 @@ ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho)
     }
 
     ALLEGRO_BITMAP* bmp = al_load_bitmap(absoluto);
-    if (bmp) return bmp;
+
+    if (bmp)
+        return bmp;
 
     /*
-     * O ambiente Windows do projeto já demonstrou não decodificar PNG
-     * pelo allegro_image em algumas instalações. O WIC é somente um
-     * decoder alternativo; caminhos e assets continuam os mesmos.
+     * Algumas instalacoes Windows do projeto nao estao conseguindo
+     * decodificar PNG pelo allegro_image. Nesse caso usamos WIC apenas
+     * como decoder alternativo, sem mudar caminhos nem arquivos.
      */
     bmp = carregarBitmapWICSeguro(absoluto);
 
@@ -94,191 +116,185 @@ ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho)
     return NULL;
 }
 
-static ALLEGRO_BITMAP* obrigatorio(const char* caminho)
+static ALLEGRO_BITMAP* carregarObrigatorio(const char* caminho)
 {
-    ALLEGRO_BITMAP* b = carregarBitmapFlexivel(caminho);
+    ALLEGRO_BITMAP* bitmap = carregarBitmapFlexivel(caminho);
 
-    if (!b)
+    if (!bitmap)
         printf("ERRO imagem obrigatoria: %s\n", caminho);
 
-    return b;
+    return bitmap;
 }
 
-bool carregarRecursosMapa(RecursosMapa* r)
+bool carregarRecursosMapa(RecursosMapa* recursos)
 {
-    if (!r) return false;
+    if (!recursos)
+        return false;
 
-    memset(r, 0, sizeof(*r));
-    r->faseCarregada = -1;
+    memset(recursos, 0, sizeof(*recursos));
+    recursos->faseCarregada = -1;
 
     if (!inicializarRaizRecursos())
         return false;
 
-    r->bolas =
-        obrigatorio("ScoobySprites/littleBalls/balls.png");
+    recursos->bolas =
+        carregarObrigatorio("ScoobySprites/littleBalls/balls.png");
 
-    r->fonte = al_create_builtin_font();
+    recursos->fonte = al_create_builtin_font();
 
-    if (!r->fonte)
+    if (!recursos->fonte)
         printf("ERRO ao criar fonte interna.\n");
 
-    return r->bolas && r->fonte;
+    return recursos->bolas && recursos->fonte;
 }
 
-void descarregarFase(Fase* f)
+void descarregarFase(Fase* fase)
 {
-<<<<<<< HEAD
-    if (!f) return;
+    if (!fase)
+        return;
 
-    if (f->fundo)
+    if (fase->fundo)
     {
-        al_destroy_bitmap(f->fundo);
-        f->fundo = NULL;
+        al_destroy_bitmap(fase->fundo);
+        fase->fundo = NULL;
     }
 
-    if (f->folhaObjetos)
+    if (fase->folhaObjetos)
     {
-        al_destroy_bitmap(f->folhaObjetos);
-        f->folhaObjetos = NULL;
+        al_destroy_bitmap(fase->folhaObjetos);
+        fase->folhaObjetos = NULL;
     }
 }
 
-bool carregarRecursosFase(RecursosMapa* r,
+bool carregarRecursosFase(RecursosMapa* recursos,
                           Fase fases[QTD_FASES],
-                          int indice)
+                          int indiceFase)
 {
-    if (!r || !fases ||
-        indice < 0 || indice >= QTD_FASES)
-        return false;
-
-    if (r->faseCarregada >= 0 &&
-        r->faseCarregada < QTD_FASES &&
-        r->faseCarregada != indice)
+    if (!recursos ||
+        !fases ||
+        indiceFase < 0 ||
+        indiceFase >= QTD_FASES)
     {
-        descarregarFase(&fases[r->faseCarregada]);
+        return false;
     }
 
-    Fase* f = &fases[indice];
+    if (recursos->faseCarregada >= 0 &&
+        recursos->faseCarregada < QTD_FASES &&
+        recursos->faseCarregada != indiceFase)
+    {
+        descarregarFase(&fases[recursos->faseCarregada]);
+    }
 
-    if (!f->fundo)
-        f->fundo = obrigatorio(f->caminhoFundo);
+    Fase* fase = &fases[indiceFase];
 
-    if (!f->fundo)
+    if (!fase->fundo)
+        fase->fundo = carregarObrigatorio(fase->caminhoFundo);
+
+    if (!fase->fundo)
         return false;
 
-    if (!f->folhaObjetos)
+    if (!fase->folhaObjetos)
     {
-        if (indice == 3)
+        if (indiceFase == 3)
         {
             ALLEGRO_BITMAP* existente =
-                carregarBitmapFlexivel(f->caminhoObjetos);
+                carregarBitmapFlexivel(fase->caminhoObjetos);
 
             /*
-             * O arquivo antigo do quarto tem resolução extremamente baixa
-             * e exigia escala ~12x. Não o ampliamos mais.
+             * A folha antiga do quarto possui resolucao baixa demais e
+             * ficava extremamente pixelizada ao ser ampliada. Quando isso
+             * ocorre usamos a composicao HD gerada pelo projeto.
              */
             if (existente &&
                 al_get_bitmap_width(existente) >= 512 &&
                 al_get_bitmap_height(existente) >= 400)
             {
-                f->folhaObjetos = existente;
+                fase->folhaObjetos = existente;
             }
             else
             {
                 if (existente)
                     al_destroy_bitmap(existente);
 
-                printf(
-                    "Quarto: sheet de baixa resolucao descartada; "
-                    "usando composicao HD.\n");
+                printf("Quarto: sheet de baixa resolucao descartada; "
+                       "usando composicao HD.\n");
 
-                f->folhaObjetos =
-                    criarFolhaQuartoProcedural();
+                fase->folhaObjetos = criarFolhaQuartoProcedural();
             }
         }
         else
         {
-            f->folhaObjetos =
-                obrigatorio(f->caminhoObjetos);
+            fase->folhaObjetos =
+                carregarObrigatorio(fase->caminhoObjetos);
         }
     }
 
-    if (!f->folhaObjetos)
+    if (!fase->folhaObjetos)
         return false;
 
-    r->faseCarregada = indice;
+    recursos->faseCarregada = indiceFase;
 
-    /* As colisões são reconstruídas depois de qualquer layout/asset. */
-    reconstruirColisoesFase(f);
+    /*
+     * Qualquer alteracao de layout ou de asset exige que a geometria
+     * fisica seja reconstruida para permanecer sincronizada com a arte.
+     */
+    reconstruirColisoesFase(fase);
 
-    if (!validarObjetosFase(f))
+    if (!validarObjetosFase(fase))
     {
         printf("ERRO: %s possui source rectangles invalidos.\n",
-               f->nome);
+               fase->nome);
         return false;
     }
 
-=======
-    if (!carregarAnimacao(&s->idle, "ScoobySprites/idle.png", 0.20f)) return false;
-    if (!carregarAnimacao(&s->walk, "ScoobySprites/walk.png", 0.12f)) return false;
-    if (!carregarAnimacao(&s->run, "ScoobySprites/run.png", 0.085f)) return false;
-    if (!carregarAnimacao(&s->bark, "ScoobySprites/bark.png", 0.085f)) return false;
-    if (!carregarAnimacao(&s->bite, "ScoobySprites/bite.png", 0.080f)) return false;
-    static const char* carry[QTD_CORES_BOLA] = {
-    "ScoobySprites/littleBalls/yellow_dog.png",
-    "ScoobySprites/littleBalls/green_dog.png",
-    "ScoobySprites/littleBalls/purple_dog.png",
-    "ScoobySprites/littleBalls/blue_dog.png",
-    "ScoobySprites/littleBalls/red_dog.png"
-    };
-    for (int i = 0; i < QTD_CORES_BOLA; i++) if (!carregarAnimacao(&s->carregar[i], carry[i], 0.14f)) return false;
-    if (!carregarAnimacao(&m->idle, "mariaSprites/idle.png", 0.20f)) return false;
-    if (!carregarAnimacao(&m->walk, "mariaSprites/walk.png", 0.13f)) return false;
-    if (!carregarAnimacao(&m->run, "mariaSprites/run.png", 0.095f)) return false;
-    if (!carregarAnimacao(&m->pick, "mariaSprites/pick.png", 0.11f)) return false;
->>>>>>> 4019a8a (atualização)
     return true;
 }
 
-void destruirRecursos(RecursosMapa* r,
+void destruirRecursos(RecursosMapa* recursos,
                       Fase fases[QTD_FASES],
-                      Scooby* s,
-                      Maria* m)
+                      Scooby* scooby,
+                      Maria* maria)
 {
     if (fases)
+    {
         for (int i = 0; i < QTD_FASES; i++)
             descarregarFase(&fases[i]);
-
-    if (r)
-    {
-        if (r->bolas)
-            al_destroy_bitmap(r->bolas);
-
-        if (r->fonte)
-            al_destroy_font(r->fonte);
-
-        r->bolas = NULL;
-        r->fonte = NULL;
-        r->faseCarregada = -1;
     }
 
-    if (s)
+    if (recursos)
     {
-        destruirAnimacaoInterna(&s->idle);
-        destruirAnimacaoInterna(&s->walk);
-        destruirAnimacaoInterna(&s->run);
-        destruirAnimacaoInterna(&s->bark);
-        destruirAnimacaoInterna(&s->bite);
+        if (recursos->bolas)
+        {
+            al_destroy_bitmap(recursos->bolas);
+            recursos->bolas = NULL;
+        }
+
+        if (recursos->fonte)
+        {
+            al_destroy_font(recursos->fonte);
+            recursos->fonte = NULL;
+        }
+
+        recursos->faseCarregada = -1;
+    }
+
+    if (scooby)
+    {
+        destruirAnimacaoInterna(&scooby->idle);
+        destruirAnimacaoInterna(&scooby->walk);
+        destruirAnimacaoInterna(&scooby->run);
+        destruirAnimacaoInterna(&scooby->bark);
+        destruirAnimacaoInterna(&scooby->bite);
 
         for (int i = 0; i < QTD_CORES_BOLA; i++)
-            destruirAnimacaoInterna(&s->carregar[i]);
+            destruirAnimacaoInterna(&scooby->carregar[i]);
     }
 
-    if (m)
+    if (maria)
     {
-        destruirAnimacaoInterna(&m->idle);
-        destruirAnimacaoInterna(&m->walk);
-        destruirAnimacaoInterna(&m->run);
-        destruirAnimacaoInterna(&m->pick);
+        destruirAnimacaoInterna(&maria->idle);
+        destruirAnimacaoInterna(&maria->walk);
+        destruirAnimacaoInterna(&maria->run);
+        destruirAnimacaoInterna(&maria->pick);
     }
 }
