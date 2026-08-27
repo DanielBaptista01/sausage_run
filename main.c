@@ -1,411 +1,219 @@
 #include "jogo.h"
 
-static void prepararContextoGrafico(ALLEGRO_DISPLAY* display)
+static void contexto(ALLEGRO_DISPLAY* d)
 {
-    if (!display) return;
-    al_set_target_backbuffer(display);
-    ALLEGRO_TRANSFORM transform;
-    al_identity_transform(&transform);
-    al_use_transform(&transform);
-    al_reset_clipping_rectangle();
+    if(!d)return;al_set_target_backbuffer(d);ALLEGRO_TRANSFORM t;al_identity_transform(&t);al_use_transform(&t);al_reset_clipping_rectangle();
+}
+static float clamp255(float v){return v<0?0:v>255?255:v;}
+
+static void titulo(ALLEGRO_DISPLAY* d,EstadoJogo e,const Fase* f,int idx,int vidas,const Bola* b)
+{
+    char t[256];
+    if(e==JOGO_VITORIA)snprintf(t,sizeof(t),"Sausage Run - VOCE VENCEU!");
+    else if(e==JOGO_GAME_OVER)snprintf(t,sizeof(t),"Sausage Run - GAME OVER");
+    else snprintf(t,sizeof(t),"Sausage Run - Fase %d/4: %s | Vidas: %d | Bola %s",idx+1,f?f->nome:"?",vidas,b?NOMES_CORES[b->cor]:"?");
+    al_set_window_title(d,t);
 }
 
-static float clamp255(float v)
+static void iniciarTransicao(TransicaoFase* t,const Fase* f)
 {
-    if (v < 0.0f) return 0.0f;
-    if (v > 255.0f) return 255.0f;
-    return v;
+    t->etapa=TRANSICAO_APROXIMAR;t->tempo=0;t->alphaFade=0;t->alvo=f->alvoEntradaSaida;t->faseTrocada=false;
 }
 
-static void atualizarTitulo(ALLEGRO_DISPLAY* display, EstadoJogo estado,
-                            const Fase* fase, int faseAtual, int vidas,
-                            const Bola* bola)
+static void imprimirValidacao(const Fase fases[QTD_FASES],const Scooby* s,const Maria* m)
 {
-    if (!display) return;
-
-    char titulo[256];
-    if (estado == JOGO_VITORIA)
-        snprintf(titulo, sizeof(titulo), "Sausage Run - VOCE VENCEU!");
-    else if (estado == JOGO_GAME_OVER)
-        snprintf(titulo, sizeof(titulo), "Sausage Run - GAME OVER");
-    else
-        snprintf(titulo, sizeof(titulo),
-                 "Sausage Run - Fase %d/4: %s | Vidas: %d | Bola %s",
-                 faseAtual + 1,
-                 fase ? fase->nome : "?",
-                 vidas,
-                 bola ? NOMES_CORES[bola->cor] : "?");
-
-    al_set_window_title(display, titulo);
-}
-
-static void iniciarTransicao(TransicaoFase* t, const Fase* fase)
-{
-    if (!t || !fase) return;
-    t->etapa = TRANSICAO_APROXIMAR;
-    t->tempo = 0.0f;
-    t->alphaFade = 0.0f;
-    t->alvo = fase->alvoTransicao;
-    t->faseTrocada = false;
-}
-
-static bool inicializarAllegro(ALLEGRO_DISPLAY** display,
-                               ALLEGRO_TIMER** timer,
-                               ALLEGRO_EVENT_QUEUE** fila,
-                               bool* audioInstalado)
-{
-    if (!al_init()) { printf("Erro ao iniciar Allegro.\n"); return false; }
-    if (!al_install_keyboard()) { printf("Erro ao iniciar teclado.\n"); return false; }
-    if (!al_init_primitives_addon()) { printf("Erro ao iniciar allegro_primitives.\n"); return false; }
-    if (!al_init_image_addon()) { printf("Erro ao iniciar allegro_image.\n"); return false; }
-
-    al_init_font_addon();
-
-    *audioInstalado = al_install_audio();
-    if (*audioInstalado && !al_reserve_samples(24))
+    printf("--- Validacao estrutural / regressao configuracional ---\n");
+    srand(SEED_DEBUG);
+    for(int fi=0;fi<QTD_FASES;fi++)
     {
-        printf("Aviso: audio sem vozes disponiveis; jogo continuara sem som.\n");
-        al_uninstall_audio();
-        *audioInstalado = false;
+        const Fase* f=&fases[fi];
+        Scooby ts=*s; Maria tm=*m; Bola tb={0};
+        int falhasSpawn=0, falhasWaypoint=0;
+
+        for(int teste=0;teste<50;teste++)
+        {
+            resetarPersonagensNaFase(&ts,&tm,&tb,f,fi,true);
+            Ponto p={tb.x,tb.y};
+            if(tb.coletada || !spawnBolaValido(f,&ts.corpo,&tm.corpo,p) ||
+               !pontoAlcancavel(f,&ts.corpo,(Ponto){ts.corpo.x,ts.corpo.y},p))
+                falhasSpawn++;
+        }
+
+        for(int i=0;i<f->quantidadeWaypoints;i++)
+        {
+            Ponto a=(i==0)?f->spawnMaria:f->waypoints[i-1];
+            Ponto b=f->waypoints[i];
+            if(!pontoAlcancavel(f,&m->corpo,a,b)) falhasWaypoint++;
+        }
+
+        printf("F%d %-9s | objetos=%d obst=%d | spawn 50x: %s | rotas waypoint: %s\n",
+               fi+1,f->nome,f->quantidadeObjetos,f->quantidadeObstaculos,
+               falhasSpawn?"FALHA":"OK",falhasWaypoint?"FALHA":"OK");
+        if(falhasSpawn) printf("  -> %d/50 resets com spawn invalido\n",falhasSpawn);
+        if(falhasWaypoint) printf("  -> %d segmentos de patrulha sem rota\n",falhasWaypoint);
     }
-
-    *display = al_create_display(LARGURA_TELA, ALTURA_TELA);
-    *timer = al_create_timer(1.0 / FPS);
-    *fila = al_create_event_queue();
-
-    if (!*display || !*timer || !*fila)
-    {
-        printf("Erro ao criar display/timer/fila.\n");
-        return false;
-    }
-
-    prepararContextoGrafico(*display);
-
-    al_register_event_source(*fila, al_get_display_event_source(*display));
-    al_register_event_source(*fila, al_get_timer_event_source(*timer));
-    al_register_event_source(*fila, al_get_keyboard_event_source());
-    return true;
+    srand((unsigned int)time(NULL));
 }
 
 int main(void)
 {
     srand((unsigned int)time(NULL));
+    if(!al_init()){printf("ERRO al_init\n");return -1;}
+    if(!al_install_keyboard()){printf("ERRO teclado\n");return -1;}
+    if(!al_init_primitives_addon()){printf("ERRO primitives\n");return -1;}
+    if(!al_init_image_addon()){printf("ERRO image addon\n");al_shutdown_primitives_addon();return -1;}
+    al_init_font_addon();
 
-    ALLEGRO_DISPLAY* display = NULL;
-    ALLEGRO_TIMER* timer = NULL;
-    ALLEGRO_EVENT_QUEUE* fila = NULL;
-    bool audioInstalado = false;
+    bool audioInstalado=al_install_audio();
+    if(audioInstalado&&!al_reserve_samples(24)){printf("Audio sem vozes; seguindo sem audio.\n");al_uninstall_audio();audioInstalado=false;}
 
-    if (!inicializarAllegro(&display, &timer, &fila, &audioInstalado))
-        return -1;
+    ALLEGRO_DISPLAY* display=al_create_display(LARGURA_TELA,ALTURA_TELA);
+    ALLEGRO_TIMER* timer=al_create_timer(1.0/FPS);
+    ALLEGRO_EVENT_QUEUE* fila=al_create_event_queue();
+    if(!display||!timer||!fila)
+    {
+        printf("ERRO display/timer/fila\n");if(fila)al_destroy_event_queue(fila);if(timer)al_destroy_timer(timer);if(display)al_destroy_display(display);
+        if(audioInstalado)al_uninstall_audio();al_shutdown_font_addon();al_shutdown_image_addon();al_shutdown_primitives_addon();return -1;
+    }
+    contexto(display);
+    al_register_event_source(fila,al_get_display_event_source(display));
+    al_register_event_source(fila,al_get_timer_event_source(timer));
+    al_register_event_source(fila,al_get_keyboard_event_source());
 
-    ALLEGRO_FONT* fonteCarregamento = al_create_builtin_font();
-    desenharCarregando(display, fonteCarregamento);
+    ALLEGRO_FONT* fonteCarga=al_create_builtin_font();desenharCarregando(display,fonteCarga);
 
-    RecursosMapa recursos = { 0 };
-    RecursosAudio audio = { 0 };
-    Fase fases[QTD_FASES] = { 0 };
-    Scooby scooby = { 0 };
-    Maria maria = { 0 };
-    Bola bola = { 0 };
-    EventoSom som = { SOM_NENHUM, 0, 0, 0, 0, false, false };
-
+    RecursosMapa recursos={0};RecursosAudio audio={0};Fase fases[QTD_FASES]={0};Scooby scooby={0};Maria maria={0};Bola bola={0};
+    EventoSom som={SOM_NENHUM,0,0,0,0,false,false};
     configurarFases(fases);
 
-    /* Hitboxes pequenas dos pes/patas; tamanho visual vem da sprite. */
-    scooby.corpo.largura = 34.0f;
-    scooby.corpo.altura = 16.0f;
-    scooby.corpo.velocidade = 135.0f;
-    scooby.direcaoSprite = DIRECAO_UP;
+    scooby.corpo.velocidade=135;scooby.corpo.hitboxLargura=36;scooby.corpo.hitboxAltura=18;scooby.corpo.hitboxOffsetX=0;scooby.corpo.hitboxOffsetY=-9;scooby.direcaoSprite=DIRECAO_UP;
+    maria.corpo.velocidade=96;maria.corpo.hitboxLargura=28;maria.corpo.hitboxAltura=20;maria.corpo.hitboxOffsetX=0;maria.corpo.hitboxOffsetY=-10;maria.direcaoSprite=DIRECAO_LEFT;
+    maria.alcanceVisao=265;maria.anguloVisao=72.0f*PI/180.0f;maria.alcanceAudicao=430;
 
-    maria.corpo.largura = 26.0f;
-    maria.corpo.altura = 20.0f;
-    maria.corpo.velocidade = 96.0f;
-    maria.direcaoSprite = DIRECAO_LEFT;
-    maria.alcanceVisao = 265.0f;
-    maria.anguloVisao = 72.0f * PI / 180.0f;
-    maria.alcanceAudicao = 430.0f;
-
-    bool recursosOk =
-        carregarRecursosMapa(&recursos) &&
-        carregarSprites(&scooby, &maria) &&
-        carregarRecursosFase(&recursos, fases, 0);
-
-    if (fonteCarregamento)
+    bool ok=carregarRecursosMapa(&recursos)&&carregarSprites(&scooby,&maria)&&carregarRecursosFase(&recursos,fases,0);
+    if(fonteCarga)al_destroy_font(fonteCarga);
+    if(!ok)
     {
-        al_destroy_font(fonteCarregamento);
-        fonteCarregamento = NULL;
+        printf("ERRO: recursos obrigatorios.\n");destruirRecursos(&recursos,fases,&scooby,&maria);destruirRecursosAudio(&audio);
+        al_destroy_event_queue(fila);al_destroy_timer(timer);al_destroy_display(display);if(audioInstalado)al_uninstall_audio();
+        al_shutdown_font_addon();al_shutdown_image_addon();al_shutdown_primitives_addon();return -1;
     }
+    contexto(display);if(audioInstalado)criarRecursosAudio(&audio);
 
-    if (!recursosOk)
-    {
-        printf("Nao foi possivel carregar todos os recursos obrigatorios.\n");
-        destruirRecursos(&recursos, fases, &scooby, &maria);
-        destruirRecursosAudio(&audio);
-        al_destroy_event_queue(fila);
-        al_destroy_timer(timer);
-        al_destroy_display(display);
-        if (audioInstalado) al_uninstall_audio();
-        al_shutdown_font_addon();
-        al_shutdown_image_addon();
-        al_shutdown_primitives_addon();
-        return -1;
-    }
+    for(int i=0;i<QTD_FASES;i++)validarConfiguracaoFase(&fases[i],&scooby,&maria,i);
+    imprimirValidacao(fases,&scooby,&maria);
 
-    /* Valida todos os spawns e waypoints contra as colisoes finais. */
-    for (int i = 0; i < QTD_FASES; i++)
-        validarConfiguracaoFase(&fases[i], &scooby, &maria, i);
-
-    prepararContextoGrafico(display);
-    if (audioInstalado) criarRecursosAudio(&audio);
-
-    int faseAtual = 0;
-    int vidas = 3;
-    EstadoJogo estado = JOGO_RODANDO;
-    EstadoJogo estadoAntesPausa = JOGO_RODANDO;
-    bool executando = true;
-    bool redesenhar = true;
-    bool debug = false;
-    float tempoTutorial = 9.0f;
-    TransicaoFase transicao = { TRANSICAO_APROXIMAR, 0.0f, 0.0f, {0,0}, false };
-
-    resetarPersonagensNaFase(&scooby, &maria, &bola,
-                             &fases[faseAtual], faseAtual, true);
-    atualizarTitulo(display, estado, &fases[faseAtual], faseAtual, vidas, &bola);
+    int faseAtual=0,vidas=3;EstadoJogo estado=JOGO_RODANDO,antesPausa=JOGO_RODANDO;
+    bool executando=true,redesenhar=true,debug=false;float tutorial=8.0f;
+    TransicaoFase trans={TRANSICAO_APROXIMAR,0,0,{0,0},false};
+    resetarPersonagensNaFase(&scooby,&maria,&bola,&fases[0],0,true);titulo(display,estado,&fases[0],0,vidas,&bola);
     al_start_timer(timer);
 
-    while (executando)
+    while(executando)
     {
-        ALLEGRO_EVENT ev;
-        al_wait_for_event(fila, &ev);
+        ALLEGRO_EVENT ev;al_wait_for_event(fila,&ev);
+        if(ev.type==ALLEGRO_EVENT_DISPLAY_CLOSE)executando=false;
+        if(ev.type==ALLEGRO_EVENT_DISPLAY_SWITCH_OUT&&estado==JOGO_RODANDO){antesPausa=estado;estado=JOGO_PAUSADO;redesenhar=true;}
 
-        if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
-            executando = false;
-
-        if (ev.type == ALLEGRO_EVENT_DISPLAY_SWITCH_OUT && estado == JOGO_RODANDO)
+        if(ev.type==ALLEGRO_EVENT_KEY_DOWN)
         {
-            estadoAntesPausa = estado;
-            estado = JOGO_PAUSADO;
-            atualizarTitulo(display, estado, &fases[faseAtual], faseAtual, vidas, &bola);
-            redesenhar = true;
-        }
-
-        if (ev.type == ALLEGRO_EVENT_KEY_DOWN)
-        {
-            if (ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
+            int k=ev.keyboard.keycode;
+            if(k==ALLEGRO_KEY_ESCAPE)
             {
-                if (estado == JOGO_VITORIA || estado == JOGO_GAME_OVER)
-                    executando = false;
-                else if (estado == JOGO_RODANDO)
-                {
-                    estadoAntesPausa = estado;
-                    estado = JOGO_PAUSADO;
-                    redesenhar = true;
-                }
-                else if (estado == JOGO_PAUSADO)
-                {
-                    estado = estadoAntesPausa;
-                    redesenhar = true;
-                }
-                atualizarTitulo(display, estado, &fases[faseAtual], faseAtual, vidas, &bola);
+                if(estado==JOGO_VITORIA||estado==JOGO_GAME_OVER)executando=false;
+                else if(estado==JOGO_RODANDO){antesPausa=estado;estado=JOGO_PAUSADO;}
+                else if(estado==JOGO_PAUSADO)estado=antesPausa;
+                redesenhar=true;
             }
-
-            if (ev.keyboard.keycode == ALLEGRO_KEY_F1)
+            if(k==ALLEGRO_KEY_F1){debug=!debug;redesenhar=true;printf("Debug F1: %s\n",debug?"ON":"OFF");}
+            if(k==ALLEGRO_KEY_R&&(estado==JOGO_VITORIA||estado==JOGO_GAME_OVER))
             {
-                debug = !debug;
-                if (debug && estado == JOGO_RODANDO)
-                {
-                    srand(SEED_DEBUG);
-                    resetarPersonagensNaFase(&scooby, &maria, &bola,
-                                             &fases[faseAtual], faseAtual, true);
-                    som.ativo = false;
-                }
-                redesenhar = true;
+                faseAtual=0;vidas=3;estado=JOGO_RODANDO;antesPausa=JOGO_RODANDO;tutorial=8;
+                maria.corpo.velocidade=96;maria.alcanceVisao=265;
+                if(!carregarRecursosFase(&recursos,fases,0)){estado=JOGO_GAME_OVER;}
+                else{validarConfiguracaoFase(&fases[0],&scooby,&maria,0);resetarPersonagensNaFase(&scooby,&maria,&bola,&fases[0],0,true);som.ativo=false;}
+                titulo(display,estado,&fases[faseAtual],faseAtual,vidas,&bola);
             }
-
-            if (ev.keyboard.keycode == ALLEGRO_KEY_R &&
-                (estado == JOGO_VITORIA || estado == JOGO_GAME_OVER))
+            if(estado==JOGO_RODANDO&&maria.estado!=MARIA_CAPTURAR)
             {
-                faseAtual = 0;
-                vidas = 3;
-                estado = JOGO_RODANDO;
-                estadoAntesPausa = JOGO_RODANDO;
-                tempoTutorial = 9.0f;
-                maria.corpo.velocidade = 96.0f;
-                maria.alcanceVisao = 265.0f;
-
-                desenharCarregando(display, recursos.fonte);
-                if (!carregarRecursosFase(&recursos, fases, faseAtual))
-                    estado = JOGO_GAME_OVER;
-                else
-                {
-                    validarConfiguracaoFase(&fases[faseAtual], &scooby, &maria, faseAtual);
-                    resetarPersonagensNaFase(&scooby, &maria, &bola,
-                                             &fases[faseAtual], faseAtual, true);
-                    som.ativo = false;
-                }
-                atualizarTitulo(display, estado, &fases[faseAtual], faseAtual, vidas, &bola);
-            }
-
-            if (estado == JOGO_RODANDO && maria.estado != MARIA_CAPTURAR)
-            {
-                if (ev.keyboard.keycode == ALLEGRO_KEY_SPACE)
-                    iniciarLatido(&scooby, &som, &audio);
-                if (ev.keyboard.keycode == ALLEGRO_KEY_E)
-                    iniciarMordida(&scooby, &bola, &audio);
+                if(k==ALLEGRO_KEY_SPACE)iniciarLatido(&scooby,&som,&audio);
+                if(k==ALLEGRO_KEY_E)iniciarMordida(&scooby,&bola,&audio);
             }
         }
 
-        if (ev.type == ALLEGRO_EVENT_TIMER)
+        if(ev.type==ALLEGRO_EVENT_TIMER)
         {
-            const float dt = 1.0f / FPS;
-
-            if (estado == JOGO_RODANDO)
+            float dt=1.0f/FPS;
+            if(estado==JOGO_RODANDO)
             {
-                Fase* fase = &fases[faseAtual];
-                ALLEGRO_KEYBOARD_STATE teclado;
-                al_get_keyboard_state(&teclado);
+                Fase* f=&fases[faseAtual];ALLEGRO_KEYBOARD_STATE teclado;al_get_keyboard_state(&teclado);atualizarSom(&som,dt);
+                if(maria.estado!=MARIA_CAPTURAR)atualizarScooby(&scooby,&teclado,f,&bola,&som,&audio,dt);
+                else{scooby.movendo=false;scooby.correndo=false;scooby.latindo=false;scooby.mordendo=false;}
+                atualizarMaria(&maria,&scooby,&som,f,&audio,dt);
 
-                atualizarSom(&som, dt);
-
-                if (maria.estado != MARIA_CAPTURAR)
-                    atualizarScooby(&scooby, &teclado, fase, &bola, &som, &audio, dt);
-                else
+                if(maria.capturaConcluida)
                 {
-                    scooby.movendo = false;
-                    scooby.correndo = false;
-                    scooby.latindo = false;
-                    scooby.mordendo = false;
+                    vidas--;som.ativo=false;
+                    if(vidas<=0){estado=JOGO_GAME_OVER;tocarEfeito(audio.gameOver,.82f);}
+                    else resetarPersonagensNaFase(&scooby,&maria,&bola,f,faseAtual,false);
+                    titulo(display,estado,f,faseAtual,vidas,&bola);
                 }
-
-                atualizarMaria(&maria, &scooby, &som, fase, &audio, dt);
-
-                /* Prioridade obrigatoria: captura antes da saida. */
-                if (maria.capturaConcluida)
+                else if(maria.estado!=MARIA_CAPTURAR&&chegouNaSaidaComBola(&scooby,f))
                 {
-                    vidas--;
-                    som.ativo = false;
-
-                    if (vidas <= 0)
-                    {
-                        estado = JOGO_GAME_OVER;
-                        tocarEfeito(audio.gameOver, 0.82f);
-                    }
-                    else
-                        resetarPersonagensNaFase(&scooby, &maria, &bola,
-                                                 fase, faseAtual, false);
-
-                    atualizarTitulo(display, estado, fase, faseAtual, vidas, &bola);
+                    estado=JOGO_TRANSICAO_FASE;som.ativo=false;iniciarTransicao(&trans,f);tocarEfeito(audio.faseCompleta,.72f);
                 }
-                else if (maria.estado != MARIA_CAPTURAR &&
-                         chegouNaSaidaComBola(&scooby, fase))
-                {
-                    estado = JOGO_TRANSICAO_FASE;
-                    som.ativo = false;
-                    iniciarTransicao(&transicao, fase);
-                    tocarEfeito(audio.faseCompleta, 0.72f);
-                    atualizarTitulo(display, estado, fase, faseAtual, vidas, &bola);
-                }
-
-                if (tempoTutorial > 0.0f) tempoTutorial -= dt;
+                if(tutorial>0)tutorial-=dt;
             }
-            else if (estado == JOGO_TRANSICAO_FASE)
+            else if(estado==JOGO_TRANSICAO_FASE)
             {
-                Fase* fase = &fases[faseAtual];
-
-                if (transicao.etapa != TRANSICAO_FADE_IN)
+                Fase* f=&fases[faseAtual];trans.tempo+=dt;
+                if(trans.etapa==TRANSICAO_APROXIMAR)
                 {
-                    transicao.tempo += dt;
-
-                    if (transicao.tempo <= 0.62f)
-                        atualizarScoobyTransicao(&scooby, fase, &bola, transicao.alvo, dt);
-                    else
-                        scooby.movendo = false;
-
-                    if (transicao.tempo > 0.28f)
+                    atualizarScoobyTransicao(&scooby,f,&bola,trans.alvo,dt);
+                    if(trans.tempo>=.48f||distancia(scooby.corpo.x,scooby.corpo.y,trans.alvo.x,trans.alvo.y)<5)
+                    {trans.etapa=TRANSICAO_FADE_OUT;trans.tempo=0;}
+                }
+                else if(trans.etapa==TRANSICAO_FADE_OUT)
+                {
+                    scooby.movendo=false;trans.alphaFade=clamp255((trans.tempo/.78f)*255.0f);
+                    if(trans.tempo>=.78f&&!trans.faseTrocada)
                     {
-                        transicao.etapa = TRANSICAO_FADE_OUT;
-                        float t = (transicao.tempo - 0.28f) / 0.92f;
-                        transicao.alphaFade = clamp255(t * 255.0f);
-                    }
-
-                    if (transicao.tempo >= 1.20f && !transicao.faseTrocada)
-                    {
-                        transicao.alphaFade = 255.0f;
-                        transicao.faseTrocada = true;
-
-                        if (faseAtual + 1 >= QTD_FASES)
-                        {
-                            estado = JOGO_VITORIA;
-                            tocarEfeito(audio.vitoria, 0.88f);
-                        }
+                        trans.alphaFade=255;trans.faseTrocada=true;
+                        if(faseAtual+1>=QTD_FASES){estado=JOGO_VITORIA;tocarEfeito(audio.vitoria,.88f);}
                         else
                         {
                             faseAtual++;
-                            desenharCarregando(display, recursos.fonte);
-
-                            if (!carregarRecursosFase(&recursos, fases, faseAtual))
-                                estado = JOGO_GAME_OVER;
+                            if(!carregarRecursosFase(&recursos,fases,faseAtual)){printf("ERRO carregar fase %d\n",faseAtual+1);estado=JOGO_GAME_OVER;}
                             else
                             {
-                                maria.corpo.velocidade = 96.0f + faseAtual * 6.0f;
-                                maria.alcanceVisao = 265.0f + faseAtual * 10.0f;
-
-                                validarConfiguracaoFase(&fases[faseAtual], &scooby, &maria, faseAtual);
-                                resetarPersonagensNaFase(&scooby, &maria, &bola,
-                                                         &fases[faseAtual], faseAtual, true);
-
-                                transicao.etapa = TRANSICAO_FADE_IN;
-                                transicao.tempo = 0.0f;
-                                transicao.alphaFade = 255.0f;
+                                maria.corpo.velocidade=96+faseAtual*6;maria.alcanceVisao=265+faseAtual*10;
+                                validarConfiguracaoFase(&fases[faseAtual],&scooby,&maria,faseAtual);
+                                resetarPersonagensNaFase(&scooby,&maria,&bola,&fases[faseAtual],faseAtual,true);
+                                trans.etapa=TRANSICAO_FADE_IN;trans.tempo=0;trans.alphaFade=255;
                             }
                         }
-                        atualizarTitulo(display, estado, &fases[faseAtual], faseAtual, vidas, &bola);
+                        titulo(display,estado,&fases[faseAtual],faseAtual,vidas,&bola);
                     }
                 }
                 else
                 {
-                    transicao.tempo += dt;
-                    float t = transicao.tempo / 0.55f;
-                    transicao.alphaFade = clamp255(255.0f * (1.0f - t));
-
-                    if (transicao.tempo >= 0.55f)
-                    {
-                        transicao.alphaFade = 0.0f;
-                        transicao.faseTrocada = false;
-                        estado = JOGO_RODANDO;
-                        atualizarTitulo(display, estado, &fases[faseAtual], faseAtual, vidas, &bola);
-                    }
+                    trans.alphaFade=clamp255(255.0f*(1.0f-trans.tempo/.55f));
+                    if(trans.tempo>=.55f){trans.alphaFade=0;trans.faseTrocada=false;estado=JOGO_RODANDO;titulo(display,estado,&fases[faseAtual],faseAtual,vidas,&bola);}
                 }
             }
-
-            redesenhar = true;
+            redesenhar=true;
         }
 
-        if (redesenhar && al_is_event_queue_empty(fila))
+        if(redesenhar&&al_is_event_queue_empty(fila))
         {
-            redesenhar = false;
-            prepararContextoGrafico(display);
-
-            if (estado == JOGO_RODANDO || estado == JOGO_PAUSADO || estado == JOGO_TRANSICAO_FASE)
-                desenharCena(&fases[faseAtual], &recursos, &scooby, &maria, &bola,
-                             &som, debug, vidas, faseAtual, estado,
-                             transicao.alphaFade, tempoTutorial);
-            else
-                desenharTelaFinal(estado, &recursos);
+            redesenhar=false;contexto(display);
+            if(estado==JOGO_RODANDO||estado==JOGO_PAUSADO||estado==JOGO_TRANSICAO_FASE)
+                desenharCena(&fases[faseAtual],&recursos,&scooby,&maria,&bola,&som,debug,vidas,faseAtual,estado,trans.alphaFade,tutorial);
+            else desenharTelaFinal(estado,&recursos);
         }
     }
 
-    prepararContextoGrafico(display);
-    destruirRecursosAudio(&audio);
-    destruirRecursos(&recursos, fases, &scooby, &maria);
-    al_destroy_event_queue(fila);
-    al_destroy_timer(timer);
-    al_destroy_display(display);
-
-    if (audioInstalado) al_uninstall_audio();
-    al_shutdown_font_addon();
-    al_shutdown_image_addon();
-    al_shutdown_primitives_addon();
-    return 0;
+    contexto(display);destruirRecursosAudio(&audio);destruirRecursos(&recursos,fases,&scooby,&maria);
+    al_destroy_event_queue(fila);al_destroy_timer(timer);al_destroy_display(display);if(audioInstalado)al_uninstall_audio();
+    al_shutdown_font_addon();al_shutdown_image_addon();al_shutdown_primitives_addon();return 0;
 }
