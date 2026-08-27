@@ -95,6 +95,9 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="util.c" />
     <ClCompile Include="recursos.c" />
+    <ClCompile Include="animacao.c" />
+    <ClCompile Include="wic_loader.c" />
+    <ClCompile Include="quarto_assets.c" />
     <ClCompile Include="fase.c" />
     <ClCompile Include="ia.c" />
     <ClCompile Include="scooby.c" />
