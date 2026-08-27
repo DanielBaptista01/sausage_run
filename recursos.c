@@ -36,16 +36,67 @@ static bool decodificarBase64ParaArquivo(const char* texto, const char* caminho)
     return true;
 }
 
+/*
+ * O Visual Studio normalmente inicia o executavel dentro de x64/Debug.
+ * Os PNGs, no entanto, ficam na raiz do repositorio. Antes de carregar
+ * qualquer recurso procuramos automaticamente a raiz correta e mudamos o
+ * diretorio de trabalho para ela.
+ */
+static bool prepararDiretorioRecursos(void)
+{
+    if (al_filename_exists("mapa/cozinha.png"))
+        return true;
+
+    const char* candidatos[] = { "..", "../..", "../../..", "../../../.." };
+    char teste[768];
+
+    for (int i = 0; i < 4; i++)
+    {
+        snprintf(teste, sizeof(teste), "%s/mapa/cozinha.png", candidatos[i]);
+        if (al_filename_exists(teste))
+        {
+            if (al_change_directory(candidatos[i]))
+            {
+                printf("Diretorio de recursos localizado automaticamente em: %s\n", candidatos[i]);
+                return true;
+            }
+        }
+    }
+
+    char* atual = al_get_current_directory();
+    if (atual)
+    {
+        printf("Erro: nao encontrei a pasta de recursos. Diretorio atual: %s\n", atual);
+        al_free(atual);
+    }
+    else
+    {
+        printf("Erro: nao encontrei a pasta de recursos do jogo.\n");
+    }
+
+    printf("Esperado encontrar mapa/cozinha.png na raiz do repositorio.\n");
+    return false;
+}
+
 ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho)
 {
     const char* prefixos[] = { "", "../", "../../", "../../../" };
     char tentativa[768];
+
     for (int i = 0; i < 4; i++)
     {
         snprintf(tentativa, sizeof(tentativa), "%s%s", prefixos[i], caminho);
+
+        if (!al_filename_exists(tentativa))
+            continue;
+
         ALLEGRO_BITMAP* bmp = al_load_bitmap(tentativa);
-        if (bmp) return bmp;
+        if (bmp)
+            return bmp;
+
+        printf("Arquivo existe, mas o Allegro nao conseguiu decodificar: %s\n", tentativa);
     }
+
     return NULL;
 }
 
@@ -98,6 +149,9 @@ static ALLEGRO_BITMAP* obrigatorio(const char* caminho)
 
 bool carregarRecursosMapa(RecursosMapa* r)
 {
+    if (!prepararDiretorioRecursos())
+        return false;
+
     r->fundos[0] = obrigatorio("mapa/cozinha.png");
     r->fundos[1] = obrigatorio("mapa/sala.png");
     r->fundos[2] = obrigatorio("mapa/banheiro.png");
