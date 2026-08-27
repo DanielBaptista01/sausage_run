@@ -64,14 +64,12 @@ typedef struct {
     int frameAtual;
     float acumulador;
     float tempoFrame;
-
     int frameW, frameH;
     int framesPorLinha, linhasDirecao;
     int margemX, margemY;
     int gapX, gapY;
     int linhaDirecao[QTD_DIRECOES];
     SourceRect source[QTD_DIRECOES][QTD_FRAMES];
-
     float escalaVisual;
     float anchorNormX, anchorNormY;
     int ultimoFrameSom;
@@ -120,7 +118,6 @@ typedef struct {
     const char* caminhoFundo;
     const char* caminhoObjetos;
     const char* nome;
-
     ObjetoMapa objetos[MAX_OBJETOS];
     int quantidadeObjetos;
     Obstaculo obstaculos[MAX_OBSTACULOS];
@@ -229,6 +226,9 @@ bool chegouNaSaidaComBola(const Scooby* scooby, const Fase* fase);
 bool inicializarRaizRecursos(void);
 bool resolverCaminhoRecurso(const char* relativo, char* saida, size_t tamanho);
 ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho);
+ALLEGRO_BITMAP* carregarBitmapWICSeguro(const char* caminho);
+ALLEGRO_BITMAP* criarFolhaQuartoProcedural(void);
+void destruirAnimacaoInterna(Animacao* animacao);
 bool carregarAnimacao(Animacao* animacao, const char* caminho, float tempoFrame,
                       float escalaVisual, float anchorX, float anchorY);
 void reiniciarAnimacao(Animacao* animacao);
