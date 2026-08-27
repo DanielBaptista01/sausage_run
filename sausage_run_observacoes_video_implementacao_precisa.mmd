@@ -1,0 +1,60 @@
+flowchart TD
+
+    ROOT["SAUSAGE RUN — CORREÇÕES OBRIGATÓRIAS BASEADAS NO VÍDEO ATUAL<br/><br/>Fonte de validação: vídeo 2026-08-27 14-39-13<br/>Objetivo: corrigir com precisão sprites, colisões, spawns, layout das fases, navegação da Maria, passagem entre fases e sensação de contato com o chão.<br/><br/>IMPORTANTE PARA A IA IMPLEMENTADORA:<br/>Não tratar estes itens apenas como ajustes visuais. Vários problemas são resultado da relação entre sprite, anchor, hitbox, obstáculos, área caminhável e level design. Corrigir cada sistema na ordem indicada e validar novamente todas as quatro fases."]
+
+    ROOT --> PRINCIPIOS["REGRAS GERAIS DE IMPLEMENTAÇÃO"]
+    ROOT --> P0["P0 — SPRITES E ANCHORS"]
+    ROOT --> P1["P1 — ÁREA CAMINHÁVEL / PAREDES"]
+    ROOT --> P2["P2 — SPAWNS"]
+    ROOT --> P3["P3 — IA DA MARIA"]
+    ROOT --> P4["P4 — LAYOUT DE MÓVEIS E OBJETOS"]
+    ROOT --> P5["P5 — SAÍDAS / TROCA DE FASE"]
+    ROOT --> P6["P6 — PROPORÇÃO E ESPAÇO ÚTIL DA TELA"]
+    ROOT --> TESTES["VALIDAÇÃO OBRIGATÓRIA"]
+
+    PRINCIPIOS --> GP1["Separar SPRITE, HITBOX e ANCHOR/PÉ."]
+    PRINCIPIOS --> GP2["Toda fase possui área caminhável explícita."]
+    PRINCIPIOS --> GP3["Spawn, waypoint, bola, saída e destino da IA devem ser validados contra área caminhável e obstáculos."]
+    PRINCIPIOS --> GP4["Não aumentar obstáculos indiscriminadamente; colisão deve representar a base física."]
+    PRINCIPIOS --> GP5["Mudanças de escala/mapa exigem recálculo consistente de todos os sistemas."]
+
+    P0 --> S1["Corrigir vazamento de pixels entre células das sprite sheets do Scooby."]
+    P0 --> S2["Validar o mesmo problema em todas as animações da Maria."]
+    P0 --> S3["Medir dimensões reais, armazenar frameW/frameH por animação e usar recorte exato."]
+    P0 --> S4["Definir anchor visual nos pés/patas."]
+
+    P1 --> W1["Impedir Scooby/Maria de andar sobre parede, rodapé, exterior e áreas pretas."]
+    P1 --> W2["Usar limites por fase e hitbox pequena dos pés."]
+
+    P2 --> SP1["Validar automaticamente todos os spawns e corrigir softlocks."]
+    P2 --> SP2["Fallback procura ponto livre próximo, mas não substitui level design correto."]
+
+    P3 --> M1["Pathfinding deve considerar clearance real da Maria."]
+    P3 --> M2["Validar waypoints após layout final."]
+    P3 --> M3["Adicionar anti-stuck com recálculo de caminho sem teleporte através de parede."]
+
+    P4 --> F1["Remover sobreposição incoerente de móveis."]
+    P4 --> F2["Objetos decorativos, como planta da Sala, não podem bloquear rota essencial."]
+    P4 --> F3["Aumentar corredores para Scooby e Maria."]
+    P4 --> F4["Móveis altos podem permitir passagem visual atrás, com colisão somente na base."]
+
+    P5 --> E1["Trigger de saída precisa coincidir com a passagem arquitetônica real."]
+    P5 --> E2["Cozinha usa a escada como saída para a próxima fase."]
+    P5 --> E3["Exigir bolinha + pés no trigger."]
+    P5 --> E4["Bloquear controle, caminhar devagar, fade out, trocar no preto e fade in."]
+
+    P6 --> T1["Reorganizar e reduzir móveis antes de aumentar resolução."]
+    P6 --> T2["Aumentar tela apenas se ainda necessário, recalculando todos os sistemas."]
+
+    ROOT --> ORDER["ORDEM OBRIGATÓRIA"]
+    ORDER --> O1["1 Corrigir recorte/anchors"] --> O2["2 Hitboxes dos pés"] --> O3["3 Área caminhável/paredes"] --> O4["4 Layout/corredores"] --> O5["5 Spawns"] --> O6["6 Grid/waypoints"] --> O7["7 Anti-stuck"] --> O8["8 Saídas reais"] --> O9["9 Transição lenta + fade"] --> O10["10 Só então avaliar aumento da tela"] --> TESTES
+
+    TESTES --> V1["V1 sprites sem fragmentos vizinhos"]
+    TESTES --> V2["V2 perímetro sem atravessar paredes"]
+    TESTES --> V3["V3 spawns sempre livres"]
+    TESTES --> V4["V4 Maria sem ficar presa"]
+    TESTES --> V5["V5 corredores com folga"]
+    TESTES --> V6["V6 objetos sem sobreposições/gargalos acidentais"]
+    TESTES --> V7["V7 saída somente na porta/escada correta com bola"]
+    TESTES --> V8["V8 caminhada lenta + fade"]
+    TESTES --> V9["V9 regressão completa até vitória"]
