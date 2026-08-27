@@ -1,0 +1,149 @@
+#include "jogo.h"
+#include "quarto_objetos_data.h"
+
+static int valorBase64(char c)
+{
+    if (c >= 'A' && c <= 'Z') return c - 'A';
+    if (c >= 'a' && c <= 'z') return c - 'a' + 26;
+    if (c >= '0' && c <= '9') return c - '0' + 52;
+    if (c == '+') return 62;
+    if (c == '/') return 63;
+    return -1;
+}
+
+static bool decodificarBase64ParaArquivo(const char* texto, const char* caminho)
+{
+    FILE* teste = fopen(caminho, "rb");
+    if (teste) { fclose(teste); return true; }
+    FILE* arquivo = fopen(caminho, "wb");
+    if (!arquivo) return false;
+    int valores[4];
+    int quantidade = 0;
+    for (const char* p = texto; *p; p++)
+    {
+        if (*p == '=') valores[quantidade++] = -2;
+        else { int v = valorBase64(*p); if (v < 0) continue; valores[quantidade++] = v; }
+        if (quantidade == 4)
+        {
+            unsigned char b1 = (unsigned char)((valores[0] << 2) | (valores[1] >> 4));
+            fwrite(&b1, 1, 1, arquivo);
+            if (valores[2] != -2) { unsigned char b2 = (unsigned char)(((valores[1] & 15) << 4) | (valores[2] >> 2)); fwrite(&b2, 1, 1, arquivo); }
+            if (valores[3] != -2 && valores[2] != -2) { unsigned char b3 = (unsigned char)(((valores[2] & 3) << 6) | valores[3]); fwrite(&b3, 1, 1, arquivo); }
+            quantidade = 0;
+        }
+    }
+    fclose(arquivo);
+    return true;
+}
+
+ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho)
+{
+    const char* prefixos[] = { "", "../", "../../", "../../../" };
+    char tentativa[768];
+    for (int i = 0; i < 4; i++)
+    {
+        snprintf(tentativa, sizeof(tentativa), "%s%s", prefixos[i], caminho);
+        ALLEGRO_BITMAP* bmp = al_load_bitmap(tentativa);
+        if (bmp) return bmp;
+    }
+    return NULL;
+}
+
+bool carregarAnimacao(Animacao* a, const char* caminho, float tempoFrame)
+{
+    a->imagem = carregarBitmapFlexivel(caminho);
+    a->frameAtual = 0; a->acumulador = 0.0f; a->tempoFrame = tempoFrame;
+    if (!a->imagem) { printf("Erro ao carregar sprite: %s\n", caminho); return false; }
+    return true;
+}
+
+void reiniciarAnimacao(Animacao* a) { a->frameAtual = 0; a->acumulador = 0.0f; }
+
+void atualizarAnimacaoLoop(Animacao* a, float dt)
+{
+    if (!a->imagem) return;
+    a->acumulador += dt;
+    while (a->acumulador >= a->tempoFrame) { a->acumulador -= a->tempoFrame; a->frameAtual = (a->frameAtual + 1) % QTD_FRAMES; }
+}
+
+bool atualizarAnimacaoUmaVez(Animacao* a, float dt)
+{
+    if (!a->imagem) return true;
+    a->acumulador += dt;
+    if (a->acumulador >= a->tempoFrame)
+    {
+        a->acumulador -= a->tempoFrame;
+        a->frameAtual++;
+        if (a->frameAtual >= QTD_FRAMES) { a->frameAtual = 0; a->acumulador = 0.0f; return true; }
+    }
+    return false;
+}
+
+void desenharAnimacao(const Animacao* a, Direcao direcao, float x, float y, float escala)
+{
+    if (!a->imagem) return;
+    int sx = a->frameAtual * FRAME_SPRITE;
+    int sy = (int)direcao * FRAME_SPRITE;
+    float dw = FRAME_SPRITE * escala, dh = FRAME_SPRITE * escala;
+    al_draw_scaled_bitmap(a->imagem, sx, sy, FRAME_SPRITE, FRAME_SPRITE,
+                          x - dw / 2.0f, y - dh * 0.78f, dw, dh, 0);
+}
+
+static ALLEGRO_BITMAP* obrigatorio(const char* caminho)
+{
+    ALLEGRO_BITMAP* bmp = carregarBitmapFlexivel(caminho);
+    if (!bmp) printf("Erro ao carregar imagem: %s\n", caminho);
+    return bmp;
+}
+
+bool carregarRecursosMapa(RecursosMapa* r)
+{
+    r->fundos[0] = obrigatorio("mapa/cozinha.png");
+    r->fundos[1] = obrigatorio("mapa/sala.png");
+    r->fundos[2] = obrigatorio("mapa/banheiro.png");
+    r->fundos[3] = obrigatorio("mapa/quarto.png");
+    r->folhasObjetos[0] = obrigatorio("mapa/cozinha_objetos.png");
+    r->folhasObjetos[1] = obrigatorio("mapa/sala_objetos.png");
+    r->folhasObjetos[2] = obrigatorio("mapa/banheiro_objetos.png");
+    r->folhasObjetos[3] = carregarBitmapFlexivel("mapa/quarto_objetos.png");
+    if (!r->folhasObjetos[3])
+    {
+        if (decodificarBase64ParaArquivo(QUARTO_OBJETOS_BASE64, "quarto_objetos_runtime.png"))
+            r->folhasObjetos[3] = carregarBitmapFlexivel("quarto_objetos_runtime.png");
+    }
+    r->bolas = obrigatorio("ScoobySprites/littleBalls/balls.png");
+    for (int i = 0; i < QTD_FASES; i++) if (!r->fundos[i]) return false;
+    return r->folhasObjetos[0] && r->folhasObjetos[1] && r->folhasObjetos[2] && r->bolas;
+}
+
+bool carregarSprites(Scooby* s, Maria* m)
+{
+    if (!carregarAnimacao(&s->idle, "ScoobySprites/idle.png", 0.20f)) return false;
+    if (!carregarAnimacao(&s->walk, "ScoobySprites/walk.png", 0.12f)) return false;
+    if (!carregarAnimacao(&s->run, "ScoobySprites/run.png", 0.085f)) return false;
+    if (!carregarAnimacao(&s->bark, "ScoobySprites/bark.png", 0.085f)) return false;
+    if (!carregarAnimacao(&s->bite, "ScoobySprites/bite.png", 0.080f)) return false;
+    static const char* carry[QTD_CORES_BOLA] = {
+        "ScoobySprites/littleBalls/ChatGPT Image 25 de ago. de 2026, 17_02_09 (10).png",
+        "ScoobySprites/littleBalls/ChatGPT Image 25 de ago. de 2026, 17_05_36 (2).png",
+        "ScoobySprites/littleBalls/ChatGPT Image 25 de ago. de 2026, 17_05_37 (3).png",
+        "ScoobySprites/littleBalls/ChatGPT Image 25 de ago. de 2026, 17_05_37 (4).png",
+        "ScoobySprites/littleBalls/ChatGPT Image 25 de ago. de 2026, 17_05_37 (5).png" };
+    for (int i = 0; i < QTD_CORES_BOLA; i++) if (!carregarAnimacao(&s->carregar[i], carry[i], 0.14f)) return false;
+    if (!carregarAnimacao(&m->idle, "mariaSprites/idle.png", 0.20f)) return false;
+    if (!carregarAnimacao(&m->walk, "mariaSprites/walk.png", 0.13f)) return false;
+    if (!carregarAnimacao(&m->run, "mariaSprites/run.png", 0.095f)) return false;
+    if (!carregarAnimacao(&m->pick, "mariaSprites/pick.png", 0.11f)) return false;
+    return true;
+}
+
+static void destruirAnimacao(Animacao* a) { if (a->imagem) { al_destroy_bitmap(a->imagem); a->imagem = NULL; } }
+
+void destruirRecursos(RecursosMapa* r, Scooby* s, Maria* m)
+{
+    for (int i = 0; i < QTD_FASES; i++) { if (r->fundos[i]) al_destroy_bitmap(r->fundos[i]); if (r->folhasObjetos[i]) al_destroy_bitmap(r->folhasObjetos[i]); }
+    if (r->bolas) al_destroy_bitmap(r->bolas);
+    destruirAnimacao(&s->idle); destruirAnimacao(&s->walk); destruirAnimacao(&s->run); destruirAnimacao(&s->bark); destruirAnimacao(&s->bite);
+    for (int i = 0; i < QTD_CORES_BOLA; i++) destruirAnimacao(&s->carregar[i]);
+    destruirAnimacao(&m->idle); destruirAnimacao(&m->walk); destruirAnimacao(&m->run); destruirAnimacao(&m->pick);
+}
