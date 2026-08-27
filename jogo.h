@@ -47,13 +47,7 @@
 typedef enum { DIRECAO_DOWN = 0, DIRECAO_UP, DIRECAO_LEFT, DIRECAO_RIGHT } Direcao;
 typedef enum { MARIA_PATRULHA, MARIA_INVESTIGAR, MARIA_PERSEGUIR, MARIA_PROCURAR, MARIA_CAPTURAR } EstadoMaria;
 typedef enum { SOM_NENHUM, SOM_CORRIDA, SOM_LATIDO, SOM_INTERACAO } TipoSom;
-typedef enum {
-    JOGO_RODANDO,
-    JOGO_TRANSICAO_FASE,
-    JOGO_PAUSADO,
-    JOGO_VITORIA,
-    JOGO_GAME_OVER
-} EstadoJogo;
+typedef enum { JOGO_RODANDO, JOGO_TRANSICAO_FASE, JOGO_PAUSADO, JOGO_VITORIA, JOGO_GAME_OVER } EstadoJogo;
 typedef enum { SAIDA_PORTA, SAIDA_ESCADA } TipoSaida;
 typedef enum { TRANSICAO_APROXIMAR, TRANSICAO_FADE_OUT, TRANSICAO_FADE_IN } EtapaTransicao;
 
@@ -65,6 +59,8 @@ typedef struct {
     int frameAtual;
     int frameW, frameH;
     int qtdFrames, qtdDirecoes;
+    int gridOffsetX, gridOffsetY;
+    int cropInset;
     float acumulador;
     float tempoFrame;
     float anchorX, anchorY;
@@ -72,8 +68,8 @@ typedef struct {
 } Animacao;
 
 typedef struct {
-    float x, y;
-    float largura, altura;
+    float x, y;              /* ponto de contato com o chao / pe */
+    float largura, altura;   /* hitbox fisica dos pes */
     float velocidade;
     float direcao;
 } Personagem;
@@ -166,6 +162,8 @@ typedef struct {
     float tempoRecalcularCaminho;
     float ultimoAlvoCaminhoX, ultimoAlvoCaminhoY;
     bool movendo, capturaConcluida;
+    float antiStuckTempo;
+    float antiStuckUltimoX, antiStuckUltimoY;
     Animacao idle, walk, run, pick;
 } Maria;
 
@@ -192,9 +190,13 @@ float mapaParaTelaY(float y);
 bool pontoDentroRetangulo(float x, float y, Retangulo r);
 bool pontoDentroObstaculo(float x, float y, Obstaculo o);
 Direcao direcaoSpritePorMovimento(float dx, float dy, Direcao atual);
+Retangulo hitboxPersonagem(const Personagem* p, float x, float y);
 bool personagemDentroArea(const Personagem* p, float x, float y, const Fase* fase);
 bool personagemColide(const Personagem* p, float novoX, float novoY, const Fase* fase);
 void moverPersonagem(Personagem* p, float dx, float dy, const Fase* fase);
+bool spawnEhValido(const Personagem* p, float x, float y, const Fase* fase, float margem);
+bool procurarPontoLivreProximo(const Personagem* p, const Fase* fase, Ponto origem, Ponto* resultado);
+void validarConfiguracaoFase(Fase* fase, const Scooby* scooby, const Maria* maria, int indiceFase);
 void resetarPersonagensNaFase(Scooby* scooby, Maria* maria, Bola* bola,
                               const Fase* fase, int faseAtual, bool novaCor);
 bool chegouNaSaidaComBola(const Scooby* scooby, const Fase* fase);
@@ -203,6 +205,7 @@ bool inicializarRaizRecursos(void);
 bool resolverCaminhoRecurso(const char* relativo, char* saida, size_t tamanho);
 ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho);
 bool carregarAnimacao(Animacao* animacao, const char* caminho, float tempoFrame);
+void configurarAnchorAnimacao(Animacao* a, float anchorX, float anchorY);
 void reiniciarAnimacao(Animacao* animacao);
 void atualizarAnimacaoLoop(Animacao* animacao, float dt);
 bool atualizarAnimacaoUmaVez(Animacao* animacao, float dt);
@@ -219,6 +222,7 @@ void tocarEfeitoPosicional(ALLEGRO_SAMPLE* sample, float x, float ganho);
 void destruirRecursosAudio(RecursosAudio* audio);
 
 void configurarFases(Fase fases[QTD_FASES]);
+void reconstruirColisoesFase(Fase* fase);
 void desenharObjeto(const Fase* fase, const ObjetoMapa* obj);
 float baseYObjeto(const ObjetoMapa* obj);
 bool validarObjetosFase(const Fase* fase);
