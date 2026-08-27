@@ -41,44 +41,57 @@ Direcao direcaoSpritePorMovimento(float dx, float dy, Direcao atual)
     return dy > 0 ? DIRECAO_DOWN : DIRECAO_UP;
 }
 
+/*
+ * x/y do personagem representam o contato com o chao.
+ * A hitbox fisica ocupa somente a regiao dos pes/patas, acima desse ponto.
+ */
+Retangulo hitboxPersonagem(const Personagem* p, float x, float y)
+{
+    if (!p) return (Retangulo){ 0, 0, 0, 0 };
+
+    return (Retangulo){
+        x - p->largura * 0.5f,
+        y - p->altura,
+        p->largura,
+        p->altura
+    };
+}
+
+static bool retangulosSobrepostos(Retangulo a, Retangulo b)
+{
+    return a.x < b.x + b.largura &&
+           a.x + a.largura > b.x &&
+           a.y < b.y + b.altura &&
+           a.y + a.altura > b.y;
+}
+
 bool personagemDentroArea(const Personagem* p, float x, float y, const Fase* fase)
 {
     if (!p || !fase) return false;
 
-    float esquerda = x - p->largura * 0.5f;
-    float direita  = x + p->largura * 0.5f;
-    float topo     = y - p->altura  * 0.5f;
-    float baixo    = y + p->altura  * 0.5f;
-
+    Retangulo h = hitboxPersonagem(p, x, y);
     const Retangulo* a = &fase->areaJogavel;
-    return esquerda >= a->x &&
-           direita  <= a->x + a->largura &&
-           topo     >= a->y &&
-           baixo    <= a->y + a->altura;
+
+    return h.x >= a->x &&
+           h.x + h.largura <= a->x + a->largura &&
+           h.y >= a->y &&
+           h.y + h.altura <= a->y + a->altura;
 }
 
 bool personagemColide(const Personagem* p, float novoX, float novoY, const Fase* fase)
 {
-    if (!personagemDentroArea(p, novoX, novoY, fase))
-        return true;
+    if (!p || !fase) return true;
+    if (!personagemDentroArea(p, novoX, novoY, fase)) return true;
 
-    float esquerda = novoX - p->largura / 2.0f;
-    float direita  = novoX + p->largura / 2.0f;
-    float topo     = novoY - p->altura / 2.0f;
-    float baixo    = novoY + p->altura / 2.0f;
+    Retangulo h = hitboxPersonagem(p, novoX, novoY);
 
     for (int i = 0; i < fase->quantidadeObstaculos; i++)
     {
         const Obstaculo* o = &fase->obstaculos[i];
         if (!o->bloqueiaMovimento) continue;
 
-        if (direita > o->x &&
-            esquerda < o->x + o->largura &&
-            baixo > o->y &&
-            topo < o->y + o->altura)
-        {
-            return true;
-        }
+        Retangulo r = { o->x, o->y, o->largura, o->altura };
+        if (retangulosSobrepostos(h, r)) return true;
     }
 
     return false;
@@ -97,13 +110,128 @@ void moverPersonagem(Personagem* p, float dx, float dy, const Fase* fase)
         p->y = novoY;
 }
 
+bool spawnEhValido(const Personagem* p, float x, float y, const Fase* fase, float margem)
+{
+    if (!p || !fase) return false;
+
+    Personagem teste = *p;
+    teste.largura += margem * 2.0f;
+    teste.altura += margem;
+
+    return !personagemColide(&teste, x, y, fase);
+}
+
+bool procurarPontoLivreProximo(const Personagem* p, const Fase* fase, Ponto origem, Ponto* resultado)
+{
+    if (!p || !fase || !resultado) return false;
+
+    if (spawnEhValido(p, origem.x, origem.y, fase, 8.0f))
+    {
+        *resultado = origem;
+        return true;
+    }
+
+    const float passo = 24.0f;
+    for (int raio = 1; raio <= 12; raio++)
+    {
+        for (int dy = -raio; dy <= raio; dy++)
+        {
+            for (int dx = -raio; dx <= raio; dx++)
+            {
+                if (abs(dx) != raio && abs(dy) != raio) continue;
+
+                Ponto pTeste = {
+                    origem.x + dx * passo,
+                    origem.y + dy * passo
+                };
+
+                if (spawnEhValido(p, pTeste.x, pTeste.y, fase, 8.0f))
+                {
+                    *resultado = pTeste;
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+static bool pontoNavegavelGenerico(const Personagem* p, const Fase* fase, Ponto ponto)
+{
+    return spawnEhValido(p, ponto.x, ponto.y, fase, 4.0f);
+}
+
+void validarConfiguracaoFase(Fase* fase, const Scooby* scooby, const Maria* maria, int indiceFase)
+{
+    if (!fase || !scooby || !maria) return;
+
+    Ponto corrigido;
+
+    if (!spawnEhValido(&scooby->corpo, fase->spawnScooby.x, fase->spawnScooby.y, fase, 10.0f))
+    {
+        printf("[FASE %d %s] spawn Scooby invalido: %.1f, %.1f\n",
+               indiceFase + 1, fase->nome, fase->spawnScooby.x, fase->spawnScooby.y);
+
+        if (procurarPontoLivreProximo(&scooby->corpo, fase, fase->spawnScooby, &corrigido))
+        {
+            fase->spawnScooby = corrigido;
+            printf("  -> corrigido automaticamente para %.1f, %.1f\n", corrigido.x, corrigido.y);
+        }
+    }
+
+    if (!spawnEhValido(&maria->corpo, fase->spawnMaria.x, fase->spawnMaria.y, fase, 10.0f))
+    {
+        printf("[FASE %d %s] spawn Maria invalido: %.1f, %.1f\n",
+               indiceFase + 1, fase->nome, fase->spawnMaria.x, fase->spawnMaria.y);
+
+        if (procurarPontoLivreProximo(&maria->corpo, fase, fase->spawnMaria, &corrigido))
+            fase->spawnMaria = corrigido;
+    }
+
+    for (int i = 0; i < fase->quantidadeWaypoints; i++)
+    {
+        if (!pontoNavegavelGenerico(&maria->corpo, fase, fase->waypoints[i]))
+        {
+            Ponto original = fase->waypoints[i];
+            if (procurarPontoLivreProximo(&maria->corpo, fase, original, &corrigido))
+            {
+                fase->waypoints[i] = corrigido;
+                printf("[FASE %d %s] waypoint %d ajustado para %.1f, %.1f\n",
+                       indiceFase + 1, fase->nome, i, corrigido.x, corrigido.y);
+            }
+        }
+    }
+
+    for (int i = 0; i < fase->quantidadeSpawnsBola; i++)
+    {
+        Personagem hitBola = { 0 };
+        hitBola.largura = 28.0f;
+        hitBola.altura = 18.0f;
+
+        if (!spawnEhValido(&hitBola, fase->spawnsBola[i].x, fase->spawnsBola[i].y, fase, 4.0f))
+        {
+            if (procurarPontoLivreProximo(&hitBola, fase, fase->spawnsBola[i], &corrigido))
+                fase->spawnsBola[i] = corrigido;
+        }
+    }
+}
+
 void resetarPersonagensNaFase(Scooby* scooby, Maria* maria, Bola* bola,
                               const Fase* fase, int faseAtual, bool novaCor)
 {
     if (!scooby || !maria || !bola || !fase) return;
 
-    scooby->corpo.x = fase->spawnScooby.x;
-    scooby->corpo.y = fase->spawnScooby.y;
+    Ponto spawnS = fase->spawnScooby;
+    if (!spawnEhValido(&scooby->corpo, spawnS.x, spawnS.y, fase, 6.0f))
+        procurarPontoLivreProximo(&scooby->corpo, fase, spawnS, &spawnS);
+
+    Ponto spawnM = fase->spawnMaria;
+    if (!spawnEhValido(&maria->corpo, spawnM.x, spawnM.y, fase, 6.0f))
+        procurarPontoLivreProximo(&maria->corpo, fase, spawnM, &spawnM);
+
+    scooby->corpo.x = spawnS.x;
+    scooby->corpo.y = spawnS.y;
     scooby->corpo.direcao = -PI / 2.0f;
     scooby->direcaoSprite = DIRECAO_UP;
     scooby->movendo = false;
@@ -122,8 +250,8 @@ void resetarPersonagensNaFase(Scooby* scooby, Maria* maria, Bola* bola,
     for (int i = 0; i < QTD_CORES_BOLA; i++)
         reiniciarAnimacao(&scooby->carregar[i]);
 
-    maria->corpo.x = fase->spawnMaria.x;
-    maria->corpo.y = fase->spawnMaria.y;
+    maria->corpo.x = spawnM.x;
+    maria->corpo.y = spawnM.y;
     maria->corpo.direcao = PI;
     maria->direcaoSprite = DIRECAO_LEFT;
     maria->estado = MARIA_PATRULHA;
@@ -139,6 +267,9 @@ void resetarPersonagensNaFase(Scooby* scooby, Maria* maria, Bola* bola,
     maria->alvoNavegavelY = maria->corpo.y;
     maria->movendo = false;
     maria->capturaConcluida = false;
+    maria->antiStuckTempo = 0.0f;
+    maria->antiStuckUltimoX = maria->corpo.x;
+    maria->antiStuckUltimoY = maria->corpo.y;
 
     reiniciarAnimacao(&maria->idle);
     reiniciarAnimacao(&maria->walk);
@@ -153,8 +284,8 @@ void resetarPersonagensNaFase(Scooby* scooby, Maria* maria, Bola* bola,
     }
     else
     {
-        bola->x = fase->spawnScooby.x + 100.0f;
-        bola->y = fase->spawnScooby.y;
+        bola->x = spawnS.x + 100.0f;
+        bola->y = spawnS.y;
     }
 
     bola->coletada = false;
@@ -164,8 +295,11 @@ void resetarPersonagensNaFase(Scooby* scooby, Maria* maria, Bola* bola,
 
 bool chegouNaSaidaComBola(const Scooby* scooby, const Fase* fase)
 {
-    if (!scooby || !fase) return false;
+    if (!scooby || !fase || !scooby->carregandoBola) return false;
 
-    return scooby->carregandoBola &&
-           pontoDentroRetangulo(scooby->corpo.x, scooby->corpo.y, fase->saida);
+    Retangulo h = hitboxPersonagem(&scooby->corpo, scooby->corpo.x, scooby->corpo.y);
+    float peX = h.x + h.largura * 0.5f;
+    float peY = h.y + h.altura;
+
+    return pontoDentroRetangulo(peX, peY, fase->saida);
 }
