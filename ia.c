@@ -58,17 +58,42 @@ static void alvoBusca(Maria* m,const Fase* f)
     m->alvoX=m->ultimaPosicaoVistaX;m->alvoY=m->ultimaPosicaoVistaY;
 }
 
-void atualizarMaria(Maria* m,const Scooby* s,EventoSom* som,const Fase* f,float dt)
+void atualizarMaria(Maria* m,const Scooby* s,EventoSom* som,const Fase* f,RecursosAudio* audio,float dt)
 {
+    EstadoMaria estadoAntes=m->estado;
     m->movendo=false;m->capturaConcluida=false;
-    if(m->estado==MARIA_CAPTURAR){if(atualizarAnimacaoUmaVez(&m->pick,dt))m->capturaConcluida=true;return;}
+
+    if(m->estado==MARIA_CAPTURAR)
+    {
+        if(atualizarAnimacaoUmaVez(&m->pick,dt))m->capturaConcluida=true;
+        return;
+    }
+
     bool viu=mariaVeScooby(m,s,f);
-    if(viu){m->estado=MARIA_PERSEGUIR;m->alvoX=s->corpo.x;m->alvoY=s->corpo.y;m->ultimaPosicaoVistaX=s->corpo.x;m->ultimaPosicaoVistaY=s->corpo.y;}
+    if(viu)
+    {
+        m->estado=MARIA_PERSEGUIR;
+        m->alvoX=s->corpo.x;m->alvoY=s->corpo.y;
+        m->ultimaPosicaoVistaX=s->corpo.x;m->ultimaPosicaoVistaY=s->corpo.y;
+    }
     else
     {
-        if(m->estado==MARIA_PERSEGUIR){m->estado=MARIA_PROCURAR;m->alvoX=m->ultimaPosicaoVistaX;m->alvoY=m->ultimaPosicaoVistaY;m->tempoBusca=4;m->tempoNovoAlvoBusca=.8f;m->tempoRecalcularCaminho=0;}
-        if(som->ativo&&!som->processado&&mariaOuveSom(m,som)){m->estado=MARIA_INVESTIGAR;m->alvoX=som->x;m->alvoY=som->y;m->ultimaPosicaoVistaX=som->x;m->ultimaPosicaoVistaY=som->y;m->tempoRecalcularCaminho=0;som->processado=true;}
+        if(m->estado==MARIA_PERSEGUIR)
+        {
+            m->estado=MARIA_PROCURAR;m->alvoX=m->ultimaPosicaoVistaX;m->alvoY=m->ultimaPosicaoVistaY;
+            m->tempoBusca=4;m->tempoNovoAlvoBusca=.8f;m->tempoRecalcularCaminho=0;
+        }
+        if(som->ativo&&!som->processado&&mariaOuveSom(m,som))
+        {
+            m->estado=MARIA_INVESTIGAR;m->alvoX=som->x;m->alvoY=som->y;
+            m->ultimaPosicaoVistaX=som->x;m->ultimaPosicaoVistaY=som->y;
+            m->tempoRecalcularCaminho=0;som->processado=true;
+        }
     }
+
+    if(audio && m->estado!=estadoAntes && (m->estado==MARIA_INVESTIGAR||m->estado==MARIA_PERSEGUIR))
+        tocarEfeitoPosicional(audio->mariaAlerta,m->corpo.x,0.52f);
+
     switch(m->estado)
     {
         case MARIA_PATRULHA:{Ponto a=f->waypoints[m->waypointAtual];moverMaria(m,f,a.x,a.y,dt,1.0f);if(distancia(m->corpo.x,m->corpo.y,a.x,a.y)<32){m->waypointAtual=(m->waypointAtual+1)%f->quantidadeWaypoints;m->tempoRecalcularCaminho=0;}break;}
@@ -77,6 +102,26 @@ void atualizarMaria(Maria* m,const Scooby* s,EventoSom* som,const Fase* f,float 
         case MARIA_PROCURAR:m->tempoBusca-=dt;m->tempoNovoAlvoBusca-=dt;if(m->tempoBusca<=0){m->estado=MARIA_PATRULHA;m->tempoRecalcularCaminho=0;}else{if(m->tempoNovoAlvoBusca<=0||distancia(m->corpo.x,m->corpo.y,m->alvoX,m->alvoY)<30){alvoBusca(m,f);m->tempoNovoAlvoBusca=.9f;}moverMaria(m,f,m->alvoX,m->alvoY,dt,.95f);}break;
         case MARIA_CAPTURAR:break;
     }
-    if(m->estado!=MARIA_CAPTURAR&&distancia(m->corpo.x,m->corpo.y,s->corpo.x,s->corpo.y)<38){m->estado=MARIA_CAPTURAR;m->movendo=false;reiniciarAnimacao(&m->pick);return;}
-    if(m->estado==MARIA_PERSEGUIR)atualizarAnimacaoLoop(&m->run,dt);else if(m->movendo)atualizarAnimacaoLoop(&m->walk,dt);else atualizarAnimacaoLoop(&m->idle,dt);
+
+    if(m->cooldownPassoAudio>0)m->cooldownPassoAudio-=dt;
+    if(m->movendo&&m->cooldownPassoAudio<=0)
+    {
+        if(audio)
+        {
+            if(m->estado==MARIA_PERSEGUIR)tocarEfeitoPosicional(audio->mariaCorrida,m->corpo.x,0.28f);
+            else tocarEfeitoPosicional(audio->mariaPasso,m->corpo.x,0.20f);
+        }
+        m->cooldownPassoAudio=(m->estado==MARIA_PERSEGUIR)?0.22f:0.38f;
+    }
+
+    if(m->estado!=MARIA_CAPTURAR&&distancia(m->corpo.x,m->corpo.y,s->corpo.x,s->corpo.y)<38)
+    {
+        m->estado=MARIA_CAPTURAR;m->movendo=false;reiniciarAnimacao(&m->pick);
+        if(audio)tocarEfeitoPosicional(audio->captura,m->corpo.x,0.78f);
+        return;
+    }
+
+    if(m->estado==MARIA_PERSEGUIR)atualizarAnimacaoLoop(&m->run,dt);
+    else if(m->movendo)atualizarAnimacaoLoop(&m->walk,dt);
+    else atualizarAnimacaoLoop(&m->idle,dt);
 }
