@@ -1,0 +1,170 @@
+flowchart TD
+
+    ROOT["SAUSAGE RUN — PLANO COMPLETO DE CORREÇÃO<br/>Objetivo: corrigir bugs funcionais, renderização, colisões, IA, transições, build e UX<br/>Repositório: DanielBaptista01/sausage_run<br/>Arquivos principais: main.c, jogo.h, fase.c, render.c, util.c, scooby.c, ia.c, recursos.c, audio.c"]
+
+    ROOT --> P0["P0 — BUGS CRÍTICOS DE GAMEPLAY"]
+    ROOT --> P1["P1 — RENDERIZAÇÃO / SPRITES / OBJETOS"]
+    ROOT --> P2["P2 — COLISÃO E LIMITES DO MAPA"]
+    ROOT --> P3["P3 — IA / PATHFINDING"]
+    ROOT --> P4["P4 — TRANSIÇÃO DE FASE"]
+    ROOT --> P5["P5 — LEVEL DESIGN / PROFUNDIDADE"]
+    ROOT --> P6["P6 — INTERFACE / UX"]
+    ROOT --> P7["P7 — BUILD / RECURSOS"]
+    ROOT --> P8["P8 — PERFORMANCE / ÁUDIO"]
+    ROOT --> VALID["VALIDAÇÃO FINAL"]
+
+%% =========================================================
+%% P0 GAMEPLAY
+%% =========================================================
+
+    P0 --> G1["BUG G1 — Scooby continua controlável durante captura<br/><br/>PROBLEMA:<br/>Maria entra em MARIA_CAPTURAR, porém atualizarScooby continua sendo chamado.<br/>Scooby pode fugir durante a animação pick.<br/><br/>ARQUIVOS:<br/>main.c, ia.c, scooby.c<br/><br/>CORREÇÃO:<br/>- Criar estado global de captura/transição OU testar maria.estado == MARIA_CAPTURAR.<br/>- Enquanto captura estiver ativa, não processar WASD, Shift, E ou Espaço.<br/>- Só devolver controle depois do reset da vida.<br/><br/>ACEITE:<br/>Ao iniciar captura, Scooby fica imóvel até a animação terminar."]
+
+    P0 --> G2["BUG G2 — É possível concluir fase durante captura<br/><br/>PROBLEMA:<br/>chegouNaSaidaComBola pode ser avaliado enquanto Maria já está capturando.<br/><br/>CORREÇÃO:<br/>- Não avaliar saída enquanto MARIA_CAPTURAR.<br/>- Prioridade de eventos do frame: captura > morte/reset > conclusão de fase.<br/><br/>ACEITE:<br/>Se Maria iniciou captura, chegar à saída não conclui a fase."]
+
+    P0 --> G3["BUG G3 — Maria pode capturar através de objetos<br/><br/>PROBLEMA:<br/>Captura usa apenas distância entre centros.<br/>Pode ocorrer com parede/móvel entre Maria e Scooby.<br/><br/>CORREÇÃO:<br/>- Exigir distância válida + linha livre.<br/>- Reutilizar teste de visibilidade ou segmento x retângulo.<br/>- Preferencialmente usar hitboxes reais dos personagens.<br/><br/>ACEITE:<br/>Nenhuma captura ocorre com obstáculo bloqueando fisicamente os personagens."]
+
+%% =========================================================
+%% P1 RENDER
+%% =========================================================
+
+    P1 --> R1["BUG R1 — Objetos renderizados com recorte incorreto<br/><br/>EXEMPLO CONFIRMADO:<br/>Objeto em cima da vassoura, ao lado do balde na cozinha, aparece com parte errada da sprite sheet.<br/><br/>CAUSA PROVÁVEL:<br/>sx/sy/sw/sh incorretos em adicionarObjeto() dentro de fase.c.<br/><br/>CORREÇÃO:<br/>- Conferir visualmente a folha mapa/cozinha_objetos.png.<br/>- Corrigir coordenadas de origem sx, sy e dimensões sw, sh.<br/>- Revalidar TODOS os objetos das quatro fases, não apenas o exemplo.<br/><br/>ACEITE:<br/>Cada objeto deve usar exatamente sua região da sprite sheet, sem pixels de objetos vizinhos."]
+
+    P1 --> R2["BUG R2 — Maria e Scooby pegam frames da linha acima/abaixo da sprite sheet<br/><br/>SINTOMA:<br/>Durante animações surgem partes de sprites pertencentes à direção de cima ou de baixo.<br/><br/>CAUSAS PROVÁVEIS:<br/>- FRAME_SPRITE = 313 pode não corresponder à célula real.<br/>- QTD_FRAMES = 4 pode não corresponder à largura real de todas as folhas.<br/>- sy = direcao * FRAME_SPRITE assume 4 linhas uniformes.<br/>- Imagens podem ter padding/bordas.<br/><br/>ARQUIVO PRINCIPAL:<br/>recursos.c / desenharAnimacao()<br/><br/>CORREÇÃO:<br/>1. Ler al_get_bitmap_width/height de cada sprite sheet.<br/>2. Validar se largura == frames * larguraFrame e altura == direções * alturaFrame.<br/>3. Não assumir necessariamente frame quadrado.<br/>4. Criar frameW e frameH na struct Animacao.<br/>5. Usar sx = frameAtual * frameW e sy = direcao * frameH.<br/>6. Se folhas tiverem layout diferente, armazenar metadados por animação.<br/><br/>ACEITE:<br/>Nenhuma animação deve mostrar pixels da linha de direção superior/inferior."]
+
+    P1 --> R3["MELHORIA R3 — Validar automaticamente sprite sheets<br/><br/>CORREÇÃO:<br/>Ao carregar animação, imprimir erro claro se dimensões não forem compatíveis com frames/direções esperados.<br/><br/>ACEITE:<br/>Sprite inválida não deve falhar silenciosamente."]
+
+    P1 --> R4["BUG R4 — Bola participa incorretamente da profundidade<br/><br/>PROBLEMA:<br/>desenharBola é chamado fora de uma ordenação geral por Y.<br/><br/>CORREÇÃO:<br/>Criar fila/lista de renderização contendo:<br/>- Scooby<br/>- Maria<br/>- Bola<br/>- Objetos dinâmicos/oclusores<br/>Ordenar por depthY/baseY.<br/><br/>ACEITE:<br/>Bola fica atrás/à frente de móveis de forma coerente com sua posição."]
+
+    P1 --> R5["BUG R5 — Profundidade de objetos baseada em 0.88 arbitrário<br/><br/>PROBLEMA:<br/>baseYObjeto usa 88% da altura para todos os objetos.<br/><br/>CORREÇÃO:<br/>Adicionar baseY/anchorY configurável por objeto.<br/>Usar o ponto de contato visual com o chão.<br/><br/>ACEITE:<br/>Personagens passam corretamente atrás ou à frente de cada móvel."]
+
+    P1 --> R6["BUG R6 — Quarto com qualidade visual inconsistente<br/><br/>CORREÇÃO:<br/>- Padronizar resolução/escala dos objetos.<br/>- Evitar sprites excessivamente ampliadas.<br/>- Revisar quarto_objetos.png e fallback embutido.<br/><br/>ACEITE:<br/>Objetos do quarto não devem parecer pixelizados em relação às demais fases."]
+
+%% =========================================================
+%% P2 COLLISION / MAP
+%% =========================================================
+
+    P2 --> C1["BUG C1 — É possível percorrer fora do mapa<br/><br/>SINTOMA CONFIRMADO NO VÍDEO:<br/>Scooby pode caminhar em regiões visuais que deveriam ser parede/fora da área jogável.<br/><br/>CAUSA:<br/>limitarAoMapa usa apenas um retângulo global baseado em MAPA_X/MAPA_TELA_W e limites Y genéricos.<br/>Isso não representa as paredes internas e contorno real de cada cômodo.<br/><br/>CORREÇÃO RECOMENDADA:<br/>- Criar limites físicos por fase.<br/>- Adicionar obstáculos invisíveis para paredes externas.<br/>- Definir uma área caminhável ou colisores perimetrais.<br/>- Não confiar apenas em limitarAoMapa().<br/><br/>ACEITE:<br/>Scooby e Maria nunca atravessam parede externa nem alcançam área preta/fora do cômodo."]
+
+    P2 --> C2["BUG C2 — Sprite visual ultrapassa o mapa mesmo quando hitbox não ultrapassa<br/><br/>CAUSA:<br/>Hitbox Scooby = 46x30, sprite desenhada ~116x116.<br/>Anchor vertical usa y - dh*0.78.<br/><br/>CORREÇÃO:<br/>- Separar hitbox física e bounds visuais.<br/>- Definir spriteAnchorX/spriteAnchorY.<br/>- Ajustar limite superior/inferior conforme área caminhável real.<br/><br/>ACEITE:<br/>Nenhuma parte significativa do personagem deve atravessar parede externa por erro de anchor."]
+
+    P2 --> C3["MELHORIA C3 — Colisão deve representar os pés, não o corpo inteiro do sprite<br/><br/>OBJETIVO:<br/>Permitir efeito top-down natural.<br/><br/>IMPLEMENTAÇÃO:<br/>- Hitbox pequena na região dos pés.<br/>- Sprite pode sobrepor visualmente objetos altos.<br/>- Colisor dos móveis deve representar apenas a área ocupada no chão.<br/><br/>ACEITE:<br/>Personagem consegue passar visualmente atrás de móveis sem atravessar sua base física."]
+
+%% =========================================================
+%% P3 IA
+%% =========================================================
+
+    P3 --> AI1["BUG AI1 — Caminho vazio quando origem e destino estão na mesma célula<br/><br/>CAUSA:<br/>BFS encontra destino imediatamente, mas quantidadeCaminho pode ficar 0.<br/><br/>CORREÇÃO:<br/>Se origem e destino estiverem na mesma célula, mover diretamente para o destino real.<br/><br/>ACEITE:<br/>Maria nunca congela a poucos pixels do alvo por estar na mesma célula."]
+
+    P3 --> AI2["BUG AI2 — destinoLivre altera célula, mas estado continua comparando alvo original<br/><br/>CORREÇÃO:<br/>Guardar alvo navegável efetivo ou considerar chegada ao último nó do caminho.<br/><br/>ACEITE:<br/>Maria não fica presa investigando permanentemente um ponto impossível."]
+
+    P3 --> AI3["BUG AI3 — Clearance do grid menor que a hitbox da Maria<br/><br/>CAUSA:<br/>Margem fixa 15 px.<br/>Maria precisa aproximadamente 17 px X e 21 px Y.<br/><br/>CORREÇÃO:<br/>Inflar obstáculos pela metade da largura/altura real da Maria.<br/><br/>ACEITE:<br/>Todo nó marcado livre deve ser realmente atravessável."]
+
+    P3 --> AI4["MELHORIA AI4 — Linha de visão exata<br/><br/>CORREÇÃO:<br/>Trocar amostragem de 54 pontos por interseção segmento-retângulo.<br/><br/>ACEITE:<br/>Sem falsos positivos/negativos em obstáculos finos."]
+
+    P3 --> AI5["MELHORIA AI5 — Seed determinística de debug<br/><br/>CORREÇÃO:<br/>Em modo F1/debug permitir seed fixa para reproduzir patrulha, bola e busca.<br/><br/>ACEITE:<br/>Mesmo seed reproduz mesmo cenário de teste."]
+
+%% =========================================================
+%% P4 TRANSITION
+%% =========================================================
+
+    P4 --> T1["NOVA MECÂNICA T1 — Cena de transição ao sair com a bolinha<br/><br/>REQUISITO DO DESIGN:<br/>Quando Scooby passar pela porta ou subir escada estando com a bolinha:<br/>1. Bloquear controles.<br/>2. Scooby continua avançando lentamente em direção à porta/escada.<br/>3. Velocidade deve ser menor que caminhada normal.<br/>4. Tela escurece gradualmente (fade out).<br/>5. Só depois carregar/resetar próxima fase.<br/>6. Fazer fade in na fase seguinte.<br/><br/>NÃO trocar fase instantaneamente."]
+
+    P4 --> T2["ESTADO NOVO — JOGO_TRANSICAO_FASE<br/><br/>Adicionar ao EstadoJogo ou criar EstadoTransicao.<br/><br/>Variáveis sugeridas:<br/>- bool emTransicao<br/>- float tempoTransicao<br/>- float alphaFade<br/>- Ponto alvoTransicao<br/>- enum TIPO_PORTA / TIPO_ESCADA<br/><br/>Durante transição:<br/>- Maria deixa de perseguir/capturar.<br/>- Input gameplay bloqueado.<br/>- Só animação de Scooby continua.<br/>- Som de fase pode tocar no início/final."]
+
+    P4 --> T3["ANIMAÇÃO DA TRANSIÇÃO<br/><br/>FASE 1:<br/>0.0–0.5 s: Scooby anda devagar para o centro da porta/escada.<br/>FASE 2:<br/>0.3–1.2 s: overlay preto aumenta alpha 0 → 255.<br/>FASE 3:<br/>Quando tela estiver preta: faseAtual++, carregar/resetar recursos.<br/>FASE 4:<br/>Fade in 255 → 0 por ~0.5 s.<br/><br/>ACEITE:<br/>Nenhum corte instantâneo entre fases."]
+
+    P4 --> T4["RENDER DO FADE<br/><br/>Após desenhar a cena:<br/>al_draw_filled_rectangle(0,0,LARGURA_TELA,ALTURA_TELA, al_map_rgba(0,0,0,alphaFade))<br/><br/>IMPORTANTE:<br/>Overlay deve ser desenhado por último antes de al_flip_display()."]
+
+%% =========================================================
+%% P5 LEVEL DESIGN / OBJECT WALL OFFSET
+%% =========================================================
+
+    P5 --> L1["REQUISITO L1 — Móveis/eletrodomésticos devem ficar um pouco à frente da parede<br/><br/>OBJETIVO VISUAL:<br/>Criar espaço caminhável atrás de móveis altos, típico de jogos top-down.<br/><br/>NÃO posicionar a base do móvel colada na parede se isso impedir o corredor visual atrás dele."]
+
+    P5 --> L2["IMPLEMENTAÇÃO L2 — Separar posição visual e área de colisão<br/><br/>Para cada objeto:<br/>- mapaX/mapaY = posição visual.<br/>- colX/colY/colW/colH = base física ocupada no chão.<br/>- depthY/anchorY = linha de profundidade.<br/><br/>A colisão deve ocupar principalmente a base inferior do móvel.<br/>A região superior do sprite pode ser atravessada visualmente por trás."]
+
+    P5 --> L3["IMPLEMENTAÇÃO L3 — Corredor atrás dos móveis<br/><br/>Ajustar objetos próximos às paredes para existir uma faixa estreita caminhável atrás deles quando fizer sentido.<br/><br/>Exemplos:<br/>- armários<br/>- geladeira<br/>- sofá<br/>- cama<br/>- pia<br/>- eletrodomésticos grandes<br/><br/>Não aplicar a objetos que fisicamente estão embutidos na parede."]
+
+    P5 --> L4["ACEITE L4 — Profundidade correta ao passar atrás<br/><br/>Quando Scooby/Maria estiverem atrás do móvel:<br/>- móvel deve ser desenhado por cima do personagem.<br/>Quando estiverem à frente:<br/>- personagem deve ser desenhado por cima do móvel.<br/><br/>A transição não pode causar popping abrupto fora da linha da base."]
+
+    P5 --> L5["BUG L5 — Saída da cozinha não corresponde visualmente à porta<br/><br/>CORREÇÃO:<br/>Reposicionar f->saida para a porta real.<br/>Adicionar alvoTransicao no centro da abertura.<br/><br/>ACEITE:<br/>Só conclui a cozinha atravessando a porta correta com a bola."]
+
+%% =========================================================
+%% P6 UX
+%% =========================================================
+
+    P6 --> U1["UX U1 — Saída invisível<br/><br/>CORREÇÃO:<br/>Após pegar a bola, indicar a saída com seta, brilho, contorno ou animação discreta.<br/>Não depender do F1."]
+
+    P6 --> U2["UX U2 — Informações não devem depender do título da janela<br/><br/>Adicionar HUD dentro do jogo:<br/>- Fase atual<br/>- Vidas<br/>- Cor da bola<br/>- Objetivo atual<br/>- Controles essenciais no tutorial."]
+
+    P6 --> U3["UX U3 — Tela de vitória e Game Over completas<br/><br/>Adicionar texto real dentro do backbuffer:<br/>- VOCÊ VENCEU!<br/>- GAME OVER<br/>- R para jogar novamente<br/>- ESC para sair<br/><br/>Usar allegro_font/allegro_ttf ou solução bitmap/font adequada."]
+
+    P6 --> U4["UX U4 — Tela inicial/tutorial<br/><br/>Mostrar:<br/>WASD mover<br/>Shift correr<br/>Espaço latir<br/>E pegar bola<br/>Objetivo: pegar a bolinha e chegar à saída sem Maria capturar."]
+
+    P6 --> U5["UX U5 — Pausa/perda de foco<br/><br/>Ao perder foco ou pressionar Esc:<br/>pausar timer lógico ou entrar em estado JOGO_PAUSADO.<br/>Maria não deve continuar perseguindo enquanto usuário está fora da janela."]
+
+%% =========================================================
+%% P7 BUILD
+%% =========================================================
+
+    P7 --> B1["BUILD B1 — Win32 não autocontido<br/><br/>CORREÇÃO:<br/>Ou configurar corretamente Debug/Release Win32 com Allegro correspondente, ou remover Win32 se o projeto oficialmente usar apenas x64.<br/><br/>Evitar configuração que compila apenas na máquina original."]
+
+    P7 --> B2["BUILD B2 — Include/Library directories<br/><br/>Documentar/configurar dependências do Allegro de forma reproduzível.<br/>Debug x64 deve usar SOMENTE libs -debug.<br/>Release x64 deve usar SOMENTE libs release."]
+
+    P7 --> B3["BUILD B3 — Verificar inicialização de primitives<br/><br/>Validar retorno de al_init_primitives_addon().<br/>Se falhar, imprimir mensagem e encerrar corretamente."]
+
+    P7 --> B4["BUILD B4 — Assets<br/><br/>Evitar depender exclusivamente de mudança global de current directory.<br/>Criar função de resolução de caminho base dos recursos.<br/>Todos os assets devem ser encontrados a partir dessa raiz."]
+
+    P7 --> B5["BUILD B5 — Fallback quarto<br/><br/>Se quarto_objetos_runtime.png existir mas não for decodificável, recriar o arquivo em vez de aceitar existência como sucesso."]
+
+%% =========================================================
+%% P8 PERFORMANCE AUDIO
+%% =========================================================
+
+    P8 --> PF1["PERF PF1 — Carregar recursos por fase<br/><br/>Atualmente muitos bitmaps ficam residentes simultaneamente.<br/>Manter sprites globais e carregar apenas fundo/objetos da fase atual quando possível.<br/><br/>ACEITE:<br/>Reduzir consumo de memória sem stutter significativo."]
+
+    P8 --> PF2["PERF PF2 — Loading screen<br/><br/>A janela não deve ficar preta durante carregamento inicial.<br/>Mostrar 'Carregando...' antes de carregar assets pesados."]
+
+    P8 --> PF3["PERF PF3 — Não atualizar window title a 60 FPS<br/><br/>Atualizar apenas quando fase, vida, bola ou estado mudar."]
+
+    P8 --> A1["ÁUDIO A1 — Validar reprodução real<br/><br/>O código gera áudio procedural, mas o vídeo enviado está silencioso.<br/>Testar diretamente no executável.<br/>Não assumir que silêncio do MP4 significa necessariamente bug do jogo."]
+
+    P8 --> A2["ÁUDIO A2 — Sincronizar passos<br/><br/>Preferir disparar som de passo em frames específicos da animação em vez de cooldown temporal puro."]
+
+%% =========================================================
+%% FINAL VALIDATION
+%% =========================================================
+
+    VALID --> V1["TESTE V1 — Cozinha<br/>- Objeto sobre a vassoura correto.<br/>- Nenhum crop errado.<br/>- Passar atrás dos móveis.<br/>- Não sair do mapa.<br/>- Porta correta conclui fase.<br/>- Fade de transição funcionando."]
+
+    VALID --> V2["TESTE V2 — Sala<br/>- Todos os móveis com colisão de base.<br/>- Scooby/Maria atrás e à frente corretamente.<br/>- Bola renderizada por profundidade.<br/>- IA contorna obstáculos."]
+
+    VALID --> V3["TESTE V3 — Banheiro<br/>- Nenhum sprite ultrapassa topo/parede.<br/>- Sem captura através de obstáculos.<br/>- Sem nós de pathfinding impossíveis."]
+
+    VALID --> V4["TESTE V4 — Quarto<br/>- Objetos sem pixelização excessiva.<br/>- Fallback de recursos validado.<br/>- Escada/saída usa cena de transição.<br/>- Vitória só acontece após transição correta."]
+
+    VALID --> V5["TESTE V5 — Todas as animações<br/>Testar idle, walk, run, bark, bite, carregar bola nas 5 cores e Maria idle/walk/run/pick nas 4 direções.<br/><br/>ACEITE:<br/>Zero vazamento de pixels da linha acima/abaixo da sprite sheet."]
+
+    VALID --> V6["TESTE V6 — Captura<br/>- Scooby fica bloqueado.<br/>- Não conclui fase durante captura.<br/>- Não captura através de móveis.<br/>- Vida decrementa uma única vez."]
+
+    VALID --> V7["TESTE V7 — Limites<br/>Percorrer todo perímetro de todas as fases tentando atravessar paredes.<br/><br/>ACEITE:<br/>Nenhum acesso à área externa/preta."]
+
+    VALID --> V8["TESTE V8 — Build limpo<br/>Clone novo → build x64 Debug → executar sem configuração manual escondida.<br/>Depois testar Release x64."]
+
+%% =========================================================
+%% IMPLEMENTATION ORDER
+%% =========================================================
+
+    ROOT --> ORDER["ORDEM OBRIGATÓRIA DE IMPLEMENTAÇÃO"]
+    ORDER --> O1["1. Corrigir leitura/corte das sprite sheets"]
+    O1 --> O2["2. Corrigir objetos com crop errado"]
+    O2 --> O3["3. Criar limites físicos reais das fases"]
+    O3 --> O4["4. Ajustar hitboxes e passagem atrás dos móveis"]
+    O4 --> O5["5. Corrigir sistema de profundidade/render por Y"]
+    O5 --> O6["6. Corrigir captura e prioridade dos estados"]
+    O6 --> O7["7. Corrigir pathfinding/clearance"]
+    O7 --> O8["8. Corrigir saídas reais de cada fase"]
+    O8 --> O9["9. Implementar JOGO_TRANSICAO_FASE + fade"]
+    O9 --> O10["10. Implementar HUD/telas finais/tutorial"]
+    O10 --> O11["11. Revisar build, performance e áudio"]
+    O11 --> VALID
