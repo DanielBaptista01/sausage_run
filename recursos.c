@@ -27,7 +27,6 @@ static bool escreverBase64ParaArquivo(const char* texto, const char* caminho)
     if (!texto || !caminho) return false;
 
     remove(caminho);
-
     FILE* arquivo = fopen(caminho, "wb");
     if (!arquivo) return false;
 
@@ -77,42 +76,26 @@ static bool escreverBase64ParaArquivo(const char* texto, const char* caminho)
 
 bool inicializarRaizRecursos(void)
 {
-    if (g_raizInicializada)
-        return true;
+    if (g_raizInicializada) return true;
 
     const char* candidatos[] = {
-        "",
-        "../",
-        "../../",
-        "../../../",
-        "../../../../",
-        "../../../../../",
-        "../../../../../../"
+        "", "../", "../../", "../../../",
+        "../../../../", "../../../../../", "../../../../../../"
     };
 
     char teste[1024];
 
     for (int i = 0; i < (int)(sizeof(candidatos) / sizeof(candidatos[0])); i++)
     {
-        snprintf(
-            teste, sizeof(teste),
-            "%smapa/cozinha.png",
-            candidatos[i]);
+        snprintf(teste, sizeof(teste), "%smapa/cozinha.png", candidatos[i]);
 
         if (al_filename_exists(teste))
         {
-            snprintf(
-                g_raizRecursos,
-                sizeof(g_raizRecursos),
-                "%s",
-                candidatos[i]);
-
+            snprintf(g_raizRecursos, sizeof(g_raizRecursos), "%s", candidatos[i]);
             g_raizInicializada = true;
 
-            printf(
-                "Raiz de recursos: %s\n",
-                g_raizRecursos[0] ? g_raizRecursos : "./");
-
+            printf("Raiz de recursos: %s\n",
+                   g_raizRecursos[0] ? g_raizRecursos : "./");
             return true;
         }
     }
@@ -120,35 +103,20 @@ bool inicializarRaizRecursos(void)
     char* atual = al_get_current_directory();
     if (atual)
     {
-        printf(
-            "Erro: nao foi possivel localizar a raiz de recursos. Diretorio atual: %s\n",
-            atual);
+        printf("Erro: nao foi possivel localizar a raiz de recursos. Diretorio atual: %s\n", atual);
         al_free(atual);
     }
 
     return false;
 }
 
-bool resolverCaminhoRecurso(
-    const char* relativo,
-    char* saida,
-    size_t tamanho)
+bool resolverCaminhoRecurso(const char* relativo, char* saida, size_t tamanho)
 {
-    if (!relativo || !saida || tamanho == 0)
-        return false;
+    if (!relativo || !saida || tamanho == 0) return false;
+    if (!inicializarRaizRecursos()) return false;
 
-    if (!inicializarRaizRecursos())
-        return false;
-
-    int escritos = snprintf(
-        saida,
-        tamanho,
-        "%s%s",
-        g_raizRecursos,
-        relativo);
-
-    return escritos > 0 &&
-           (size_t)escritos < tamanho;
+    int escritos = snprintf(saida, tamanho, "%s%s", g_raizRecursos, relativo);
+    return escritos > 0 && (size_t)escritos < tamanho;
 }
 
 #ifdef _WIN32
@@ -157,126 +125,70 @@ static ALLEGRO_BITMAP* carregarBitmapWIC(const char* caminho)
     if (!caminho) return NULL;
 
     wchar_t caminhoWide[1024];
-
     int convertido = MultiByteToWideChar(
         CP_UTF8, 0, caminho, -1,
         caminhoWide,
         (int)(sizeof(caminhoWide) / sizeof(caminhoWide[0])));
 
-    if (convertido <= 0)
-        return NULL;
+    if (convertido <= 0) return NULL;
 
-    HRESULT hrCom =
-        CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-
-    bool deveFinalizarCom =
-        SUCCEEDED(hrCom);
+    HRESULT hrCom = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    bool deveFinalizarCom = SUCCEEDED(hrCom);
 
     IWICImagingFactory* factory = NULL;
     IWICBitmapDecoder* decoder = NULL;
     IWICBitmapFrameDecode* frame = NULL;
     IWICFormatConverter* converter = NULL;
-
     unsigned char* pixels = NULL;
     ALLEGRO_BITMAP* bitmap = NULL;
     ALLEGRO_LOCKED_REGION* lock = NULL;
 
     HRESULT hr = CoCreateInstance(
-        &CLSID_WICImagingFactory,
-        NULL,
-        CLSCTX_INPROC_SERVER,
-        &IID_IWICImagingFactory,
-        (LPVOID*)&factory);
-
-    if (FAILED(hr) || !factory)
-        goto fim;
+        &CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER,
+        &IID_IWICImagingFactory, (LPVOID*)&factory);
+    if (FAILED(hr) || !factory) goto fim;
 
     hr = IWICImagingFactory_CreateDecoderFromFilename(
-        factory,
-        caminhoWide,
-        NULL,
-        GENERIC_READ,
-        WICDecodeMetadataCacheOnLoad,
-        &decoder);
+        factory, caminhoWide, NULL, GENERIC_READ,
+        WICDecodeMetadataCacheOnLoad, &decoder);
+    if (FAILED(hr) || !decoder) goto fim;
 
-    if (FAILED(hr) || !decoder)
-        goto fim;
+    hr = IWICBitmapDecoder_GetFrame(decoder, 0, &frame);
+    if (FAILED(hr) || !frame) goto fim;
 
-    hr = IWICBitmapDecoder_GetFrame(
-        decoder, 0, &frame);
-
-    if (FAILED(hr) || !frame)
-        goto fim;
-
-    hr = IWICImagingFactory_CreateFormatConverter(
-        factory, &converter);
-
-    if (FAILED(hr) || !converter)
-        goto fim;
+    hr = IWICImagingFactory_CreateFormatConverter(factory, &converter);
+    if (FAILED(hr) || !converter) goto fim;
 
     hr = IWICFormatConverter_Initialize(
-        converter,
-        (IWICBitmapSource*)frame,
+        converter, (IWICBitmapSource*)frame,
         &GUID_WICPixelFormat32bppRGBA,
-        WICBitmapDitherTypeNone,
-        NULL,
-        0.0,
+        WICBitmapDitherTypeNone, NULL, 0.0,
         WICBitmapPaletteTypeCustom);
+    if (FAILED(hr)) goto fim;
 
-    if (FAILED(hr))
+    UINT largura = 0, altura = 0;
+    hr = IWICFormatConverter_GetSize(converter, &largura, &altura);
+    if (FAILED(hr) || largura == 0 || altura == 0 ||
+        largura > 10000 || altura > 10000)
         goto fim;
-
-    UINT largura = 0;
-    UINT altura = 0;
-
-    hr = IWICFormatConverter_GetSize(
-        converter,
-        &largura,
-        &altura);
-
-    if (FAILED(hr) ||
-        largura == 0 ||
-        altura == 0 ||
-        largura > 10000 ||
-        altura > 10000)
-    {
-        goto fim;
-    }
 
     UINT stride = largura * 4;
     UINT tamanhoPixels = stride * altura;
-
-    pixels =
-        (unsigned char*)malloc(tamanhoPixels);
-
-    if (!pixels)
-        goto fim;
+    pixels = (unsigned char*)malloc(tamanhoPixels);
+    if (!pixels) goto fim;
 
     hr = IWICFormatConverter_CopyPixels(
-        converter,
-        NULL,
-        stride,
-        tamanhoPixels,
-        pixels);
-
-    if (FAILED(hr))
-        goto fim;
+        converter, NULL, stride, tamanhoPixels, pixels);
+    if (FAILED(hr)) goto fim;
 
     int flagsAntigas = al_get_new_bitmap_flags();
     al_set_new_bitmap_flags(ALLEGRO_MEMORY_BITMAP);
-
-    bitmap = al_create_bitmap(
-        (int)largura,
-        (int)altura);
-
+    bitmap = al_create_bitmap((int)largura, (int)altura);
     al_set_new_bitmap_flags(flagsAntigas);
-
-    if (!bitmap)
-        goto fim;
+    if (!bitmap) goto fim;
 
     lock = al_lock_bitmap(
-        bitmap,
-        ALLEGRO_PIXEL_FORMAT_ABGR_8888_LE,
+        bitmap, ALLEGRO_PIXEL_FORMAT_ABGR_8888_LE,
         ALLEGRO_LOCK_WRITEONLY);
 
     if (!lock)
@@ -288,12 +200,9 @@ static ALLEGRO_BITMAP* carregarBitmapWIC(const char* caminho)
 
     for (UINT y = 0; y < altura; y++)
     {
-        unsigned char* origem =
-            pixels + y * stride;
-
+        unsigned char* origem = pixels + y * stride;
         unsigned char* destino =
-            (unsigned char*)lock->data +
-            y * lock->pitch;
+            (unsigned char*)lock->data + y * lock->pitch;
 
         for (UINT x = 0; x < largura; x++)
         {
@@ -302,12 +211,9 @@ static ALLEGRO_BITMAP* carregarBitmapWIC(const char* caminho)
             unsigned char b = origem[x * 4 + 2];
             unsigned char a = origem[x * 4 + 3];
 
-            destino[x * 4 + 0] =
-                (unsigned char)((r * a + 127) / 255);
-            destino[x * 4 + 1] =
-                (unsigned char)((g * a + 127) / 255);
-            destino[x * 4 + 2] =
-                (unsigned char)((b * a + 127) / 255);
+            destino[x * 4 + 0] = (unsigned char)((r * a + 127) / 255);
+            destino[x * 4 + 1] = (unsigned char)((g * a + 127) / 255);
+            destino[x * 4 + 2] = (unsigned char)((b * a + 127) / 255);
             destino[x * 4 + 3] = a;
         }
     }
@@ -316,18 +222,14 @@ static ALLEGRO_BITMAP* carregarBitmapWIC(const char* caminho)
     lock = NULL;
 
 fim:
-    if (lock && bitmap)
-        al_unlock_bitmap(bitmap);
-
+    if (lock && bitmap) al_unlock_bitmap(bitmap);
     free(pixels);
 
     if (converter) IWICFormatConverter_Release(converter);
     if (frame) IWICBitmapFrameDecode_Release(frame);
     if (decoder) IWICBitmapDecoder_Release(decoder);
     if (factory) IWICImagingFactory_Release(factory);
-
-    if (deveFinalizarCom)
-        CoUninitialize();
+    if (deveFinalizarCom) CoUninitialize();
 
     return bitmap;
 }
@@ -337,86 +239,55 @@ ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho)
 {
     char absoluto[1024];
 
-    if (!resolverCaminhoRecurso(
-            caminho,
-            absoluto,
-            sizeof(absoluto)))
-    {
+    if (!resolverCaminhoRecurso(caminho, absoluto, sizeof(absoluto)))
         return NULL;
-    }
 
     if (!al_filename_exists(absoluto))
     {
-        printf(
-            "Arquivo de imagem nao encontrado: %s\n",
-            absoluto);
+        printf("Arquivo de imagem nao encontrado: %s\n", absoluto);
         return NULL;
     }
 
-    ALLEGRO_BITMAP* bmp =
-        al_load_bitmap(absoluto);
-
-    if (bmp)
-        return bmp;
+    ALLEGRO_BITMAP* bmp = al_load_bitmap(absoluto);
+    if (bmp) return bmp;
 
 #ifdef _WIN32
     bmp = carregarBitmapWIC(absoluto);
-
     if (bmp)
     {
-        printf(
-            "Imagem carregada pelo fallback WIC: %s\n",
-            caminho);
+        printf("Imagem carregada pelo fallback WIC: %s\n", caminho);
         return bmp;
     }
 #endif
 
-    printf(
-        "Arquivo existe, mas nao foi possivel decodificar: %s\n",
-        caminho);
-
+    printf("Arquivo existe, mas nao foi possivel decodificar: %s\n", caminho);
     return NULL;
 }
 
-bool carregarAnimacao(
-    Animacao* a,
-    const char* caminho,
-    float tempoFrame)
+/*
+ * As folhas do projeto sao 4x4, mas algumas imagens geradas possuem 1254 px.
+ * 1254 nao e divisivel exatamente por 4. Isso nao invalida a folha: as duas
+ * colunas/linhas extras sao distribuidas entre as celulas. Por isso o recorte
+ * e calculado pelas bordas proporcionais, e nao por um frameW fixo.
+ */
+bool carregarAnimacao(Animacao* a, const char* caminho, float tempoFrame)
 {
     if (!a) return false;
-
     memset(a, 0, sizeof(*a));
 
-    a->imagem =
-        carregarBitmapFlexivel(caminho);
-
+    a->imagem = carregarBitmapFlexivel(caminho);
     if (!a->imagem)
     {
-        printf(
-            "Erro ao carregar sprite: %s\n",
-            caminho);
+        printf("Erro ao carregar sprite: %s\n", caminho);
         return false;
     }
 
-    int largura =
-        al_get_bitmap_width(a->imagem);
+    int largura = al_get_bitmap_width(a->imagem);
+    int altura = al_get_bitmap_height(a->imagem);
 
-    int altura =
-        al_get_bitmap_height(a->imagem);
-
-    if (largura <= 0 ||
-        altura <= 0 ||
-        largura % QTD_FRAMES != 0 ||
-        altura % QTD_DIRECOES != 0)
+    if (largura < QTD_FRAMES || altura < QTD_DIRECOES)
     {
-        printf(
-            "Sprite sheet invalida: %s -> %dx%d. Esperado dimensoes divisiveis por %d frames e %d direcoes.\n",
-            caminho,
-            largura,
-            altura,
-            QTD_FRAMES,
-            QTD_DIRECOES);
-
+        printf("Sprite sheet invalida: %s -> %dx%d.\n", caminho, largura, altura);
         al_destroy_bitmap(a->imagem);
         a->imagem = NULL;
         return false;
@@ -426,20 +297,6 @@ bool carregarAnimacao(
     a->qtdDirecoes = QTD_DIRECOES;
     a->frameW = largura / a->qtdFrames;
     a->frameH = altura / a->qtdDirecoes;
-
-    if (a->frameW <= 0 || a->frameH <= 0)
-    {
-        printf(
-            "Frames invalidos em %s: %dx%d\n",
-            caminho,
-            a->frameW,
-            a->frameH);
-
-        al_destroy_bitmap(a->imagem);
-        a->imagem = NULL;
-        return false;
-    }
-
     a->frameAtual = 0;
     a->acumulador = 0.0f;
     a->tempoFrame = tempoFrame;
@@ -447,13 +304,19 @@ bool carregarAnimacao(
     a->anchorY = 0.80f;
     a->ultimoFrameSom = -1;
 
-    printf(
-        "Sprite validada: %s | folha=%dx%d | frame=%dx%d\n",
-        caminho,
-        largura,
-        altura,
-        a->frameW,
-        a->frameH);
+    if ((largura % a->qtdFrames) != 0 ||
+        (altura % a->qtdDirecoes) != 0)
+    {
+        printf(
+            "Sprite 4x4 com dimensao nao exata aceita: %s | folha=%dx%d | celulas ~%dx%d | recorte proporcional ativo.\n",
+            caminho, largura, altura, a->frameW, a->frameH);
+    }
+    else
+    {
+        printf(
+            "Sprite validada: %s | folha=%dx%d | frame=%dx%d\n",
+            caminho, largura, altura, a->frameW, a->frameH);
+    }
 
     return true;
 }
@@ -461,43 +324,29 @@ bool carregarAnimacao(
 void reiniciarAnimacao(Animacao* a)
 {
     if (!a) return;
-
     a->frameAtual = 0;
     a->acumulador = 0.0f;
     a->ultimoFrameSom = -1;
 }
 
-void atualizarAnimacaoLoop(
-    Animacao* a,
-    float dt)
+void atualizarAnimacaoLoop(Animacao* a, float dt)
 {
-    if (!a || !a->imagem ||
-        a->qtdFrames <= 0 ||
-        a->tempoFrame <= 0.0f)
-    {
+    if (!a || !a->imagem || a->qtdFrames <= 0 || a->tempoFrame <= 0.0f)
         return;
-    }
 
     a->acumulador += dt;
-
     while (a->acumulador >= a->tempoFrame)
     {
         a->acumulador -= a->tempoFrame;
-        a->frameAtual =
-            (a->frameAtual + 1) %
-            a->qtdFrames;
+        a->frameAtual = (a->frameAtual + 1) % a->qtdFrames;
     }
 }
 
-bool atualizarAnimacaoUmaVez(
-    Animacao* a,
-    float dt)
+bool atualizarAnimacaoUmaVez(Animacao* a, float dt)
 {
-    if (!a || !a->imagem)
-        return true;
+    if (!a || !a->imagem) return true;
 
     a->acumulador += dt;
-
     if (a->acumulador >= a->tempoFrame)
     {
         a->acumulador -= a->tempoFrame;
@@ -515,58 +364,49 @@ bool atualizarAnimacaoUmaVez(
 }
 
 void desenharAnimacao(
-    const Animacao* a,
-    Direcao direcao,
-    float x,
-    float y,
-    float escala)
+    const Animacao* a, Direcao direcao,
+    float x, float y, float escala)
 {
-    if (!a || !a->imagem ||
-        a->frameW <= 0 ||
-        a->frameH <= 0)
-    {
+    if (!a || !a->imagem || a->qtdFrames <= 0 || a->qtdDirecoes <= 0)
         return;
-    }
 
     int frame = a->frameAtual;
-
     if (frame < 0) frame = 0;
-    if (frame >= a->qtdFrames)
-        frame = a->qtdFrames - 1;
+    if (frame >= a->qtdFrames) frame = a->qtdFrames - 1;
 
     int linha = (int)direcao;
-
     if (linha < 0) linha = 0;
-    if (linha >= a->qtdDirecoes)
-        linha = a->qtdDirecoes - 1;
+    if (linha >= a->qtdDirecoes) linha = a->qtdDirecoes - 1;
 
-    int sx = frame * a->frameW;
-    int sy = linha * a->frameH;
+    int folhaW = al_get_bitmap_width(a->imagem);
+    int folhaH = al_get_bitmap_height(a->imagem);
 
-    float dw = a->frameW * escala;
-    float dh = a->frameH * escala;
+    /* Bordas proporcionais: funciona tanto em 1252 como 1254, 1256 etc. */
+    int sx0 = (frame * folhaW) / a->qtdFrames;
+    int sx1 = ((frame + 1) * folhaW) / a->qtdFrames;
+    int sy0 = (linha * folhaH) / a->qtdDirecoes;
+    int sy1 = ((linha + 1) * folhaH) / a->qtdDirecoes;
+
+    int sw = sx1 - sx0;
+    int sh = sy1 - sy0;
+    if (sw <= 0 || sh <= 0) return;
+
+    float dw = sw * escala;
+    float dh = sh * escala;
 
     al_draw_scaled_bitmap(
         a->imagem,
-        sx, sy,
-        a->frameW, a->frameH,
+        sx0, sy0, sw, sh,
         x - dw * a->anchorX,
         y - dh * a->anchorY,
-        dw, dh,
-        0);
+        dw, dh, 0);
 }
 
-static ALLEGRO_BITMAP* carregarObrigatorio(
-    const char* caminho)
+static ALLEGRO_BITMAP* carregarObrigatorio(const char* caminho)
 {
-    ALLEGRO_BITMAP* bmp =
-        carregarBitmapFlexivel(caminho);
-
+    ALLEGRO_BITMAP* bmp = carregarBitmapFlexivel(caminho);
     if (!bmp)
-        printf(
-            "Erro ao carregar imagem obrigatoria: %s\n",
-            caminho);
-
+        printf("Erro ao carregar imagem obrigatoria: %s\n", caminho);
     return bmp;
 }
 
@@ -577,19 +417,13 @@ bool carregarRecursosMapa(RecursosMapa* r)
     memset(r, 0, sizeof(*r));
     r->faseCarregada = -1;
 
-    if (!inicializarRaizRecursos())
-        return false;
+    if (!inicializarRaizRecursos()) return false;
 
-    r->bolas =
-        carregarObrigatorio(
-            "ScoobySprites/littleBalls/balls.png");
-
-    r->fonte =
-        al_create_builtin_font();
+    r->bolas = carregarObrigatorio("ScoobySprites/littleBalls/balls.png");
+    r->fonte = al_create_builtin_font();
 
     if (!r->fonte)
-        printf(
-            "Erro ao criar fonte interna do Allegro.\n");
+        printf("Erro ao criar fonte interna do Allegro.\n");
 
     return r->bolas && r->fonte;
 }
@@ -611,33 +445,21 @@ void descarregarFase(Fase* fase)
     }
 }
 
-static ALLEGRO_BITMAP* carregarObjetosQuartoComFallback(
-    const char* caminhoOriginal)
+static ALLEGRO_BITMAP* carregarObjetosQuartoComFallback(const char* caminhoOriginal)
 {
-    ALLEGRO_BITMAP* bmp =
-        carregarBitmapFlexivel(caminhoOriginal);
-
-    if (bmp)
-        return bmp;
+    ALLEGRO_BITMAP* bmp = carregarBitmapFlexivel(caminhoOriginal);
+    if (bmp) return bmp;
 
     char runtime[1024];
-
     if (!resolverCaminhoRecurso(
-            "quarto_objetos_runtime.png",
-            runtime,
-            sizeof(runtime)))
-    {
+            "quarto_objetos_runtime.png", runtime, sizeof(runtime)))
         return NULL;
-    }
 
     remove(runtime);
 
-    if (!escreverBase64ParaArquivo(
-            QUARTO_OBJETOS_BASE64,
-            runtime))
+    if (!escreverBase64ParaArquivo(QUARTO_OBJETOS_BASE64, runtime))
     {
-        printf(
-            "Falha ao recriar fallback do quarto.\n");
+        printf("Falha ao recriar fallback do quarto.\n");
         return NULL;
     }
 
@@ -648,63 +470,43 @@ static ALLEGRO_BITMAP* carregarObjetosQuartoComFallback(
 #endif
 
     if (!bmp)
-        printf(
-            "Fallback do quarto foi recriado, mas ainda nao pode ser decodificado.\n");
+        printf("Fallback do quarto foi recriado, mas ainda nao pode ser decodificado.\n");
 
     return bmp;
 }
 
 bool carregarRecursosFase(
-    RecursosMapa* r,
-    Fase fases[QTD_FASES],
-    int indiceFase)
+    RecursosMapa* r, Fase fases[QTD_FASES], int indiceFase)
 {
-    if (!r || !fases ||
-        indiceFase < 0 ||
-        indiceFase >= QTD_FASES)
-    {
+    if (!r || !fases || indiceFase < 0 || indiceFase >= QTD_FASES)
         return false;
-    }
 
     if (r->faseCarregada >= 0 &&
         r->faseCarregada < QTD_FASES &&
         r->faseCarregada != indiceFase)
     {
-        descarregarFase(
-            &fases[r->faseCarregada]);
+        descarregarFase(&fases[r->faseCarregada]);
     }
 
     Fase* f = &fases[indiceFase];
 
     if (!f->fundo)
-        f->fundo =
-            carregarObrigatorio(
-                f->caminhoFundo);
+        f->fundo = carregarObrigatorio(f->caminhoFundo);
 
     if (!f->folhaObjetos)
     {
         if (indiceFase == 3)
-            f->folhaObjetos =
-                carregarObjetosQuartoComFallback(
-                    f->caminhoObjetos);
+            f->folhaObjetos = carregarObjetosQuartoComFallback(f->caminhoObjetos);
         else
-            f->folhaObjetos =
-                carregarObrigatorio(
-                    f->caminhoObjetos);
+            f->folhaObjetos = carregarObrigatorio(f->caminhoObjetos);
     }
 
-    if (!f->fundo ||
-        !f->folhaObjetos)
-    {
-        return false;
-    }
+    if (!f->fundo || !f->folhaObjetos) return false;
 
     r->faseCarregada = indiceFase;
 
     if (!validarObjetosFase(f))
-        printf(
-            "Aviso: %s possui recortes de objetos invalidos.\n",
-            f->nome);
+        printf("Aviso: %s possui recortes de objetos invalidos.\n", f->nome);
 
     return true;
 }
@@ -713,30 +515,11 @@ bool carregarSprites(Scooby* s, Maria* m)
 {
     if (!s || !m) return false;
 
-    if (!carregarAnimacao(
-            &s->idle,
-            "ScoobySprites/idle.png",
-            0.20f)) return false;
-
-    if (!carregarAnimacao(
-            &s->walk,
-            "ScoobySprites/walk.png",
-            0.12f)) return false;
-
-    if (!carregarAnimacao(
-            &s->run,
-            "ScoobySprites/run.png",
-            0.085f)) return false;
-
-    if (!carregarAnimacao(
-            &s->bark,
-            "ScoobySprites/bark.png",
-            0.085f)) return false;
-
-    if (!carregarAnimacao(
-            &s->bite,
-            "ScoobySprites/bite.png",
-            0.080f)) return false;
+    if (!carregarAnimacao(&s->idle, "ScoobySprites/idle.png", 0.20f)) return false;
+    if (!carregarAnimacao(&s->walk, "ScoobySprites/walk.png", 0.12f)) return false;
+    if (!carregarAnimacao(&s->run, "ScoobySprites/run.png", 0.085f)) return false;
+    if (!carregarAnimacao(&s->bark, "ScoobySprites/bark.png", 0.085f)) return false;
+    if (!carregarAnimacao(&s->bite, "ScoobySprites/bite.png", 0.080f)) return false;
 
     static const char* carry[QTD_CORES_BOLA] = {
         "ScoobySprites/littleBalls/yellow_dog.png",
@@ -748,34 +531,14 @@ bool carregarSprites(Scooby* s, Maria* m)
 
     for (int i = 0; i < QTD_CORES_BOLA; i++)
     {
-        if (!carregarAnimacao(
-                &s->carregar[i],
-                carry[i],
-                0.14f))
-        {
+        if (!carregarAnimacao(&s->carregar[i], carry[i], 0.14f))
             return false;
-        }
     }
 
-    if (!carregarAnimacao(
-            &m->idle,
-            "mariaSprites/idle.png",
-            0.20f)) return false;
-
-    if (!carregarAnimacao(
-            &m->walk,
-            "mariaSprites/walk.png",
-            0.13f)) return false;
-
-    if (!carregarAnimacao(
-            &m->run,
-            "mariaSprites/run.png",
-            0.095f)) return false;
-
-    if (!carregarAnimacao(
-            &m->pick,
-            "mariaSprites/pick.png",
-            0.11f)) return false;
+    if (!carregarAnimacao(&m->idle, "mariaSprites/idle.png", 0.20f)) return false;
+    if (!carregarAnimacao(&m->walk, "mariaSprites/walk.png", 0.13f)) return false;
+    if (!carregarAnimacao(&m->run, "mariaSprites/run.png", 0.095f)) return false;
+    if (!carregarAnimacao(&m->pick, "mariaSprites/pick.png", 0.11f)) return false;
 
     return true;
 }
@@ -783,7 +546,6 @@ bool carregarSprites(Scooby* s, Maria* m)
 static void destruirAnimacao(Animacao* a)
 {
     if (!a) return;
-
     if (a->imagem)
     {
         al_destroy_bitmap(a->imagem);
@@ -792,10 +554,7 @@ static void destruirAnimacao(Animacao* a)
 }
 
 void destruirRecursos(
-    RecursosMapa* r,
-    Fase fases[QTD_FASES],
-    Scooby* s,
-    Maria* m)
+    RecursosMapa* r, Fase fases[QTD_FASES], Scooby* s, Maria* m)
 {
     if (fases)
     {
