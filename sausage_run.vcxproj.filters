@@ -13,6 +13,7 @@
     <ClCompile Include="ia.c"><Filter>Arquivos de Origem</Filter></ClCompile>
     <ClCompile Include="scooby.c"><Filter>Arquivos de Origem</Filter></ClCompile>
     <ClCompile Include="render.c"><Filter>Arquivos de Origem</Filter></ClCompile>
+    <ClCompile Include="audio.c"><Filter>Arquivos de Origem</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="jogo.h"><Filter>Arquivos de Cabeçalho</Filter></ClInclude>
