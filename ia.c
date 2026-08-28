@@ -51,15 +51,26 @@ bool mariaVeScooby(const Maria* m,const Scooby* s,const Fase* f)
     return linhaVisaoLivre(f,m->corpo.x,m->corpo.y,s->corpo.x,s->corpo.y);
 }
 
+static float distanciaRetangulos(Retangulo a,Retangulo b)
+{
+    float dx=0,dy=0;
+    if(a.x+a.largura<b.x)dx=b.x-(a.x+a.largura);
+    else if(b.x+b.largura<a.x)dx=a.x-(b.x+b.largura);
+    if(a.y+a.altura<b.y)dy=b.y-(a.y+a.altura);
+    else if(b.y+b.altura<a.y)dy=a.y-(b.y+b.altura);
+    return sqrtf(dx*dx+dy*dy);
+}
+
 bool mariaPodeCapturar(const Maria* m,const Scooby* s,const Fase* f)
 {
     if(!m||!s||!f)return false;
-    Retangulo a=hitboxPersonagem(&m->corpo,m->corpo.x,m->corpo.y);
-    Retangulo b=hitboxPersonagem(&s->corpo,s->corpo.x,s->corpo.y);
-    float dx=0,dy=0;
-    if(a.x+a.largura<b.x)dx=b.x-(a.x+a.largura);else if(b.x+b.largura<a.x)dx=a.x-(b.x+b.largura);
-    if(a.y+a.altura<b.y)dy=b.y-(a.y+a.altura);else if(b.y+b.altura<a.y)dy=a.y-(b.y+b.altura);
-    if(sqrtf(dx*dx+dy*dy)>13.0f)return false;
+    Retangulo maria=hitboxPersonagem(&m->corpo,m->corpo.x,m->corpo.y);
+    HitboxScooby hs=obterHitboxScooby(s,s->corpo.x,s->corpo.y);
+
+    /* Captura ocorre pela parte real mais proxima do corpo/cabeca. */
+    float dCorpo=distanciaRetangulos(maria,hs.corpo);
+    float dCabeca=distanciaRetangulos(maria,hs.cabeca);
+    if(fminf(dCorpo,dCabeca)>13.0f)return false;
     return linhaVisaoLivre(f,m->corpo.x,m->corpo.y,s->corpo.x,s->corpo.y);
 }
 
