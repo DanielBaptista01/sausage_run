@@ -102,7 +102,7 @@ static void debugDraw(const Fase* f,const Scooby* s,const Maria* m,const Bola* b
     caixa(hs.corpo, al_map_rgb(70,255,95),2);
     caixa(hs.cabeca,al_map_rgb(60,220,255),2);
     caixa(hm,al_map_rgb(255,235,60),2);
-    al_draw_filled_circle(s->corpo.x,s->corpo.y,4,al_map_rgb(50,255,80));
+    /* O ponto verde do anchor foi removido: ele nao representa colisao. */
     al_draw_filled_circle(m->corpo.x,m->corpo.y,4,al_map_rgb(255,230,40));
     if(!b->coletada)al_draw_circle(b->x,b->y,RAIO_BOLA,al_map_rgb(70,150,255),2);
 
