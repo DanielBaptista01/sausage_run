@@ -31,6 +31,8 @@
 #define QTD_DIRECOES 4
 #define QTD_FASES 4
 #define QTD_CORES_BOLA 5
+#define QTD_ITENS_MENU_PRINCIPAL 5
+#define QTD_ITENS_MENU_PAUSA 4
 
 #define MAX_OBJETOS 40
 #define MAX_OBSTACULOS 64
@@ -51,6 +53,15 @@ typedef enum { DIRECAO_DOWN = 0, DIRECAO_UP, DIRECAO_LEFT, DIRECAO_RIGHT } Direc
 typedef enum { MARIA_PATRULHA, MARIA_INVESTIGAR, MARIA_PERSEGUIR, MARIA_PROCURAR, MARIA_CAPTURAR } EstadoMaria;
 typedef enum { SOM_NENHUM, SOM_CORRIDA, SOM_LATIDO, SOM_INTERACAO } TipoSom;
 typedef enum { JOGO_RODANDO, JOGO_TRANSICAO_FASE, JOGO_PAUSADO, JOGO_VITORIA, JOGO_GAME_OVER } EstadoJogo;
+typedef enum {
+    TELA_SPLASH,
+    TELA_MENU_PRINCIPAL,
+    TELA_TECLAS,
+    TELA_HISTORIA,
+    TELA_DESENVOLVEDOR,
+    TELA_GAMEPLAY,
+    TELA_PAUSA
+} TelaUI;
 typedef enum { SAIDA_PORTA, SAIDA_ESCADA } TipoSaida;
 typedef enum { TRANSICAO_APROXIMAR, TRANSICAO_FADE_OUT, TRANSICAO_FADE_IN } EtapaTransicao;
 typedef enum { OBJ_SPRITE, OBJ_PROCEDURAL_QUARTO } TipoVisualObjeto;
@@ -286,8 +297,22 @@ void atualizarScoobyTransicao(Scooby* scooby, const Fase* fase,
 void desenharCena(const Fase* fase, const RecursosMapa* recursos,
                   const Scooby* scooby, const Maria* maria, const Bola* bola,
                   const EventoSom* som, bool debug, int vidas, int faseAtual,
-                  EstadoJogo estado, float alphaFade, float tempoTutorial);
+                  EstadoJogo estado, float alphaFade, float tempoTutorial,
+                  int selecaoPausa);
 void desenharTelaFinal(EstadoJogo estado, const RecursosMapa* recursos);
 void desenharCarregando(ALLEGRO_DISPLAY* display, ALLEGRO_FONT* fonte);
+
+/* Interface e navegacao entre telas. */
+void desenharSplashUI(const RecursosMapa* recursos,const Fase* fase,
+                      const Scooby* scooby,const Maria* maria,float tempo);
+void desenharMenuPrincipalUI(const RecursosMapa* recursos,const Fase* fase,
+                             const Scooby* scooby,const Maria* maria,int selecionado,float tempo);
+void desenharTelaTeclasUI(const RecursosMapa* recursos,const Fase* fase,
+                          const Scooby* scooby,const Maria* maria,float tempo);
+void desenharTelaHistoriaUI(const RecursosMapa* recursos,const Fase* fase,
+                            const Scooby* scooby,const Maria* maria,float tempo);
+void desenharTelaDesenvolvedorUI(const RecursosMapa* recursos,const Fase* fase,
+                                 const Scooby* scooby,const Maria* maria,float tempo);
+void desenharMenuPausaOverlay(const RecursosMapa* recursos,int selecionado);
 
 #endif
