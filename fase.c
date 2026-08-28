@@ -20,6 +20,30 @@ static void objeto(Fase* f, int sx,int sy,int sw,int sh,
     o->bloqueiaMovimento=bloqueia;o->bloqueiaVisao=visao;o->permitePassarAtras=atras;
 }
 
+/*
+ * Alguns elementos visuais fazem parte de um recorte composto do atlas, mas
+ * ocupam bases fisicas independentes no mapa. Nesses casos usamos um objeto
+ * somente de colisao. visualId=-1 faz com que ele participe de colisao/F1,
+ * mas nao desenhe uma segunda copia do sprite.
+ */
+static void colisorSomente(Fase* f,float x,float y,float w,float h,bool visao)
+{
+    if(!f||f->quantidadeObjetos>=MAX_OBJETOS||w<=0||h<=0)return;
+
+    ObjetoMapa* o=&f->objetos[f->quantidadeObjetos++];
+    memset(o,0,sizeof(*o));
+    o->tipoVisual=OBJ_SPRITE;
+    o->sx=0;o->sy=0;o->sw=(int)w;o->sh=(int)h;
+    o->insetFonte=0;
+    o->visualId=-1;
+    o->mapaX=x;o->mapaY=y;o->escala=1.0f;
+    o->baseX=0;o->baseY=0;o->baseW=1;o->baseH=1;
+    o->depthAnchorY=1.0f;
+    o->bloqueiaMovimento=true;
+    o->bloqueiaVisao=visao;
+    o->permitePassarAtras=false;
+}
+
 static void obstaculo(Fase* f,float x,float y,float w,float h,bool visao,bool parede)
 {
     if(!f||f->quantidadeObstaculos>=MAX_OBSTACULOS||w<=0||h<=0)return;
@@ -55,16 +79,14 @@ static void paredesPerimetro(Fase* f)
     Retangulo a=f->areaJogavel;
     const float e=12.0f;
 
+    /* areaJogavel representa piso real; parede/rodape ficam fora dela. */
     obstaculo(f,a.x,a.y,a.largura,e,true,true);
     obstaculo(f,a.x,a.y,e,a.altura,true,true);
     obstaculo(f,a.x+a.largura-e,a.y,e,a.altura,true,true);
 
     /*
-     * A borda inferior permanece SEMPRE solida durante gameplay normal.
-     * O trigger de saida fica sobre a regiao de piso anterior a abertura;
-     * ele inicia a transicao, mas nao transforma a madeira em area livre.
-     * A travessia visual da abertura e tratada exclusivamente pelo estado
-     * JOGO_TRANSICAO_FASE em scooby.c.
+     * Borda inferior sempre solida em gameplay. A unica travessia acontece
+     * em atualizarScoobyTransicao(), depois do trigger correto ser ativado.
      */
     obstaculo(f,a.x,a.y+a.altura-e,a.largura,e,true,true);
 }
@@ -87,7 +109,7 @@ void reconstruirColisoesFase(Fase* f)
 
 void desenharObjeto(const Fase* f,const ObjetoMapa* o)
 {
-    if(!f||!o||!f->folhaObjetos)return;
+    if(!f||!o||!f->folhaObjetos||o->visualId<0)return;
 
     int inset=o->insetFonte;
     int sx=o->sx+inset,sy=o->sy+inset,sw=o->sw-inset*2,sh=o->sh-inset*2;
@@ -104,7 +126,7 @@ void desenharObjeto(const Fase* f,const ObjetoMapa* o)
 
 float baseYObjeto(const ObjetoMapa* o)
 {
-    if(!o)return -9999;
+    if(!o||o->visualId<0)return -9999;
     return mapaParaTelaY(o->mapaY)+o->sh*MAPA_ESCALA*o->escala*o->depthAnchorY;
 }
 
@@ -118,6 +140,10 @@ bool validarObjetosFase(const Fase* f)
     for(int i=0;i<f->quantidadeObjetos;i++)
     {
         const ObjetoMapa* o=&f->objetos[i];
+
+        /* Collider sem visual nao possui source rectangle no atlas. */
+        if(o->visualId<0)continue;
+
         int sx=o->sx+o->insetFonte;
         int sy=o->sy+o->insetFonte;
         int sw=o->sw-o->insetFonte*2;
@@ -137,9 +163,11 @@ bool validarObjetosFase(const Fase* f)
 static void cozinha(Fase* f)
 {
     f->nome="Cozinha";f->caminhoFundo="mapa/cozinha.png";f->caminhoObjetos="mapa/cozinha_objetos.png";f->tipoSaida=SAIDA_ESCADA;
-    /* piso termina antes da moldura inferior de madeira */
-    f->areaJogavel=areaFonte(82,125,1284,850);
-    f->triggerSaida=areaFonte(500,895,155,70);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(578),mapaParaTelaY(965)};
+
+    /* Piso real: a faixa superior de parede/azulejo nao e caminhavel. */
+    f->areaJogavel=areaFonte(82,300,1284,675);
+    f->triggerSaida=areaFonte(500,895,155,70);
+    f->alvoEntradaSaida=(Ponto){mapaParaTelaX(578),mapaParaTelaY(965)};
 
     objeto(f,25,19,243,354,100,145,1.00,.05,.60,.90,.38,true,true,true,2,0);
     objeto(f,326,71,486,269,360,145,1.00,.01,.53,.98,.46,true,true,true,2,1);
@@ -161,8 +189,17 @@ static void cozinha(Fase* f)
 static void sala(Fase* f)
 {
     f->nome="Sala";f->caminhoFundo="mapa/sala.png";f->caminhoObjetos="mapa/sala_objetos.png";f->tipoSaida=SAIDA_ESCADA;
-    f->areaJogavel=areaFonte(72,125,1290,850);
-    f->triggerSaida=areaFonte(1135,875,155,90);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1210),mapaParaTelaY(965)};
+
+    /*
+     * O rodape/papel de parede superior terminam aproximadamente em y=300
+     * da imagem fonte. Antes, y=125 deixava toda a parede dentro do piso e
+     * permitia Scooby/Maria caminharem sobre janela e parede.
+     */
+    f->areaJogavel=areaFonte(72,300,1290,675);
+
+    /* Trigger alinhado com a abertura real da escada, nao deslocado à direita. */
+    f->triggerSaida=areaFonte(1035,875,180,90);
+    f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1125),mapaParaTelaY(965)};
 
     objeto(f,52,19,188,494,90,285,.84,.05,.58,.90,.40,true,true,true,2,0);
     objeto(f,353,66,277,245,300,145,.93,.04,.55,.92,.43,true,true,true,2,1);
@@ -175,6 +212,13 @@ static void sala(Fase* f)
     objeto(f,1291,500,122,163,1165,575,.84,.10,.50,.80,.48,true,false,false,2,8);
     objeto(f,485,689,256,386,720,735,.60,.20,.72,.60,.25,true,false,false,2,9);
 
+    /*
+     * Caixa de brinquedos ao lado da mesa de centro: o desenho faz parte de
+     * um recorte composto, mas sua base nao estava coberta pelo collider do
+     * objeto principal. Este collider aparece no F1 e impede atravessamento.
+     */
+    colisorSomente(f,715,785,175,90,false);
+
     f->spawnScooby=(Ponto){mapaParaTelaX(420),mapaParaTelaY(770)};
     f->spawnMaria=(Ponto){mapaParaTelaX(800),mapaParaTelaY(500)};
     waypoint(f,500,420);waypoint(f,650,500);waypoint(f,900,500);waypoint(f,900,650);waypoint(f,750,780);waypoint(f,400,700);
@@ -185,7 +229,8 @@ static void banheiro(Fase* f)
 {
     f->nome="Banheiro";f->caminhoFundo="mapa/banheiro.png";f->caminhoObjetos="mapa/banheiro_objetos.png";f->tipoSaida=SAIDA_PORTA;
     f->areaJogavel=areaFonte(78,320,1285,655);
-    f->triggerSaida=areaFonte(585,880,280,85);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(725),mapaParaTelaY(965)};
+    f->triggerSaida=areaFonte(585,880,280,85);
+    f->alvoEntradaSaida=(Ponto){mapaParaTelaX(725),mapaParaTelaY(965)};
 
     objeto(f,42,19,437,478,65,130,.88,.02,.06,.96,.91,true,true,false,2,0);
     objeto(f,539,92,167,359,1000,145,.92,.05,.50,.90,.48,true,true,true,2,1);
@@ -207,26 +252,24 @@ static void banheiro(Fase* f)
 static void quarto(Fase* f)
 {
     f->nome="Quarto";f->caminhoFundo="mapa/quarto.png";f->caminhoObjetos="mapa/quarto_objetos.png";f->tipoSaida=SAIDA_ESCADA;
-    f->areaJogavel=areaFonte(82,130,1280,845);
-    f->triggerSaida=areaFonte(1040,875,210,90);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1145),mapaParaTelaY(965)};
 
-    /*
-     * Source rectangles medidos no atlas REAL mapa/quarto_objetos.png
-     * (100x75). Eles nao pertencem ao atlas procedural antigo.
-     * As escalas foram reduzidas/rebalanceadas mantendo o estilo pixel-art,
-     * sem substituir os sprites por formas geometricas.
-     */
-    objeto(f, 0, 1,32,28, 105,150,11.3f,.04,.50,.92,.47,true,true,true,0,0);  /* cama casal */
-    objeto(f,33, 7,20,20, 545,155,10.6f,.06,.48,.88,.48,true,true,true,0,1);  /* berco */
-    objeto(f,55, 1,18,26, 910,145,10.8f,.06,.50,.88,.47,true,true,true,0,2);  /* guarda roupa */
-    objeto(f,75, 6,10,20,1190,160,10.8f,.10,.55,.80,.40,true,true,true,0,3);  /* espelho */
-    objeto(f,87, 9,11,18,1190,470, 9.8f,.08,.48,.84,.48,true,true,true,0,4);  /* comoda alta */
-    objeto(f, 2,29,29,20, 465,555,10.2f,.05,.34,.90,.62,true,true,true,0,5);  /* cama/sofa infantil */
-    objeto(f,34,28,23,20, 120,600, 9.8f,.05,.46,.90,.50,true,true,true,0,6);  /* estante */
-    objeto(f,60,32,20,16, 900,585,10.0f,.06,.38,.88,.58,true,true,true,0,7);  /* bau */
-    objeto(f,82,30,17,17,1120,610, 9.6f,.08,.35,.84,.60,true,false,false,0,8); /* puff */
-    objeto(f, 3,50,13,10, 300,785,10.0f,.08,.34,.84,.60,true,false,false,0,9); /* mesa infantil */
-    objeto(f,44,52, 7, 9, 745,790, 9.5f,.08,.35,.84,.60,true,false,false,0,10);/* criado */
+    /* A faixa de papel de parede superior fica fora da area de piso. */
+    f->areaJogavel=areaFonte(82,245,1280,730);
+    f->triggerSaida=areaFonte(1040,875,210,90);
+    f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1145),mapaParaTelaY(965)};
+
+    /* Source rectangles medidos no atlas REAL mapa/quarto_objetos.png (100x75). */
+    objeto(f, 0, 1,32,28, 105,150,11.3f,.04,.50,.92,.47,true,true,true,0,0);
+    objeto(f,33, 7,20,20, 545,155,10.6f,.06,.48,.88,.48,true,true,true,0,1);
+    objeto(f,55, 1,18,26, 910,145,10.8f,.06,.50,.88,.47,true,true,true,0,2);
+    objeto(f,75, 6,10,20,1190,160,10.8f,.10,.55,.80,.40,true,true,true,0,3);
+    objeto(f,87, 9,11,18,1190,470, 9.8f,.08,.48,.84,.48,true,true,true,0,4);
+    objeto(f, 2,29,29,20, 465,555,10.2f,.05,.34,.90,.62,true,true,true,0,5);
+    objeto(f,34,28,23,20, 120,600, 9.8f,.05,.46,.90,.50,true,true,true,0,6);
+    objeto(f,60,32,20,16, 900,585,10.0f,.06,.38,.88,.58,true,true,true,0,7);
+    objeto(f,82,30,17,17,1120,610, 9.6f,.08,.35,.84,.60,true,false,false,0,8);
+    objeto(f, 3,50,13,10, 300,785,10.0f,.08,.34,.84,.60,true,false,false,0,9);
+    objeto(f,44,52, 7, 9, 745,790, 9.5f,.08,.35,.84,.60,true,false,false,0,10);
 
     f->spawnScooby=(Ponto){mapaParaTelaX(500),mapaParaTelaY(760)};
     f->spawnMaria=(Ponto){mapaParaTelaX(900),mapaParaTelaY(470)};
