@@ -148,7 +148,6 @@ static void cozinha(Fase* f)
 {
     f->nome="Cozinha";f->caminhoFundo="mapa/cozinha.png";f->caminhoObjetos="mapa/cozinha_objetos.png";f->tipoSaida=SAIDA_ESCADA;
 
-    /* 25 px fonte adicionais de corredor atras dos moveis superiores. */
     f->areaJogavel=areaFonte(82,245,1284,730);
     f->triggerSaida=areaFonte(495,895,130,70);
     f->alvoEntradaSaida=(Ponto){mapaParaTelaX(560),mapaParaTelaY(965)};
@@ -162,19 +161,16 @@ static void cozinha(Fase* f)
     objeto(f,838,396,160,385,790,425,.94,.04,.45,.92,.53,true,true,true,2,5);
     objeto(f,451,615,192,243,110,710,.84,.04,.52,.92,.46,true,true,true,2,6);
 
-    /*
-     * O recorte do balde possuia uma faixa de madeira no extremo direito.
-     * Ela era o artefato indicado ao lado da vassoura. A vassoura (objeto 8)
-     * permanece exatamente com o crop ja aprovado pelo usuario.
-     */
+    /* O crop da vassoura permanece intacto; somente a faixa de madeira do
+       recorte vizinho do balde foi removida. */
     objeto(f,700,708,88,124,960,730,.88,.10,.48,.80,.48,true,false,false,2,7);
     objeto(f,975,667,106,203,1050,690,.90,.17,.72,.66,.25,false,false,false,0,8);
     objeto(f,240,817,177,241,1200,750,.78,.15,.68,.70,.30,true,false,false,2,9);
 
     f->spawnScooby=(Ponto){mapaParaTelaX(705),mapaParaTelaY(840)};
     f->spawnMaria=(Ponto){mapaParaTelaX(1015),mapaParaTelaY(550)};
-    waypoint(f,600,430);waypoint(f,800,430);waypoint(f,1050,500);waypoint(f,1100,720);waypoint(f,750,800);waypoint(f,450,800);
-    spawnBola(f,400,430);spawnBola(f,650,500);spawnBola(f,1150,600);spawnBola(f,850,820);
+    waypoint(f,560,470);waypoint(f,760,470);waypoint(f,1050,500);waypoint(f,1100,720);waypoint(f,750,800);waypoint(f,430,820);
+    spawnBola(f,390,550);spawnBola(f,600,550);spawnBola(f,1150,600);spawnBola(f,780,920);
 }
 
 static void sala(Fase* f)
@@ -188,11 +184,6 @@ static void sala(Fase* f)
     objeto(f,52,19,188,494,90,285,.84,.05,.58,.90,.40,true,true,true,2,0);
     objeto(f,353,66,277,245,300,145,.93,.04,.55,.92,.43,true,true,true,2,1);
 
-    /*
-     * Estacao gamer: as caixas pretas da referencia foram convertidas para
-     * coordenadas do mapa. Mesa e cadeira possuem bloqueios independentes e
-     * nenhuma caixa unica cobre o vao visual entre as duas regioes.
-     */
     objeto(f,723,71,451,397,690,120,.82,.04,.55,.92,.43,false,false,true,2,2);
     colisorSomente(f,690,180,368,184,true);
     colisorSomente(f,812,355,125,74,true);
@@ -204,15 +195,14 @@ static void sala(Fase* f)
     objeto(f,1112,461,154,213,980,525,.90,.08,.50,.84,.48,true,true,true,2,7);
     objeto(f,1291,500,122,163,1165,575,.84,.10,.50,.80,.48,true,false,false,2,8);
 
-    /* Imagem composta caixa + vaso; bloqueios seguem os retangulos pretos. */
     objeto(f,485,689,256,386,720,735,.60,.20,.72,.60,.25,false,false,false,2,9);
     colisorSomente(f,728,748,124,92,false);
     colisorSomente(f,798,910,58,55,false);
 
-    f->spawnScooby=(Ponto){mapaParaTelaX(420),mapaParaTelaY(770)};
+    f->spawnScooby=(Ponto){mapaParaTelaX(410),mapaParaTelaY(780)};
     f->spawnMaria=(Ponto){mapaParaTelaX(800),mapaParaTelaY(500)};
-    waypoint(f,500,400);waypoint(f,650,480);waypoint(f,900,480);waypoint(f,1020,620);waypoint(f,900,760);waypoint(f,430,700);
-    spawnBola(f,250,350);spawnBola(f,600,400);spawnBola(f,1200,550);spawnBola(f,950,760);
+    waypoint(f,470,430);waypoint(f,650,480);waypoint(f,900,480);waypoint(f,1010,610);waypoint(f,900,760);waypoint(f,430,700);
+    spawnBola(f,210,390);spawnBola(f,610,390);spawnBola(f,1150,600);spawnBola(f,950,760);
 }
 
 static void banheiro(Fase* f)
@@ -237,14 +227,13 @@ static void banheiro(Fase* f)
     f->spawnScooby=(Ponto){mapaParaTelaX(460),mapaParaTelaY(820)};
     f->spawnMaria=(Ponto){mapaParaTelaX(835),mapaParaTelaY(540)};
     waypoint(f,500,430);waypoint(f,750,430);waypoint(f,950,430);waypoint(f,1000,650);waypoint(f,850,700);waypoint(f,500,720);
-    spawnBola(f,850,650);spawnBola(f,560,780);spawnBola(f,780,560);spawnBola(f,980,650);
+    spawnBola(f,850,650);spawnBola(f,540,750);spawnBola(f,770,470);spawnBola(f,980,650);
 }
 
 static void quarto(Fase* f)
 {
     f->nome="Quarto";f->caminhoFundo="mapa/quarto.png";f->caminhoObjetos="mapa/quarto_objetos.png";f->tipoSaida=SAIDA_ESCADA;
 
-    /* Piso com corredor atras dos moveis superiores; parede continua acima. */
     f->areaJogavel=areaFonte(82,170,1280,805);
     f->triggerSaida=areaFonte(1040,875,210,90);
     f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1145),mapaParaTelaY(965)};
@@ -255,18 +244,12 @@ static void quarto(Fase* f)
     objeto(f,75, 6,10,20,1035,260,10.8f,.10,.55,.80,.40,true,true,true,0,3);
     objeto(f,87, 9,11,18,1180,455, 9.8f,.25,.60,.50,.32,true,true,true,0,4);
 
-    /*
-     * Barreira central em L seguindo a marcacao preta do usuario:
-     * bloco A ~ x505..865 / y410..555
-     * bloco B ~ x865..1085 / y455..565
-     */
     objeto(f,34,28,23,20,505,410,8.0f,.02,.10,.96,.86,false,false,true,0,6);
     objeto(f,34,28,23,20,690,410,8.0f,.02,.10,.96,.86,false,false,true,0,11);
     objeto(f, 2,29,29,20,865,455,7.6f,.02,.10,.96,.86,false,false,true,0,5);
     colisorSomente(f,505,410,360,145,true);
     colisorSomente(f,865,455,220,110,true);
 
-    /* Objetos inferiores distribuidos para formar rotas sem fechar a fase. */
     objeto(f,34,28,23,20,120,555,8.6f,.05,.46,.90,.50,true,true,true,0,12);
     objeto(f,60,32,20,16,900,650,9.2f,.06,.38,.88,.58,true,true,true,0,7);
     objeto(f,82,30,17,17,1110,650,9.2f,.08,.35,.84,.60,true,false,false,0,8);
@@ -280,7 +263,7 @@ static void quarto(Fase* f)
     waypoint(f,1180,390);waypoint(f,820,780);waypoint(f,500,820);
     waypoint(f,400,760);waypoint(f,260,500);
 
-    spawnBola(f,850,340);spawnBola(f,1200,520);spawnBola(f,650,700);spawnBola(f,260,600);
+    spawnBola(f,760,430);spawnBola(f,1230,490);spawnBola(f,540,590);spawnBola(f,180,680);
 }
 
 void configurarFases(Fase fases[QTD_FASES])
