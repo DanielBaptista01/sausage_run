@@ -1,0 +1,53 @@
+flowchart TD
+
+ROOT["SAUSAGE RUN — ADENDO TÉCNICO DE CORREÇÕES (OBJETOS DA COZINHA E HITBOX ADAPTÁVEL DO SCOOBY)<br/><br/>Objetivo: formalizar, no mesmo padrão técnico dos arquivos anteriores, as novas observações para implementação por IA.<br/><br/>Escopo: remoção de artefato de madeira na Cozinha, preservação do balde azul sem cortes e substituição da hitbox atual do Scooby por uma hitbox composta, menor e adaptável por direção, conforme a referência visual já fornecida pelo usuário."]
+
+ROOT --> GERAL["A — CORREÇÕES GERAIS"]
+ROOT --> F1["B — FASE 1: COZINHA"]
+ROOT --> ORDEM["C — ORDEM DE IMPLEMENTAÇÃO"]
+ROOT --> VALID["D — VALIDAÇÃO / CRITÉRIOS DE ACEITE"]
+
+GERAL --> G1["G1 — A hitbox atual do Scooby é inadequada e deve ser substituída<br/><br/>Problema observado:<br/>a hitbox atual do Scooby continua ruim, desproporcional e deslocada em relação ao sprite.<br/><br/>Requisito obrigatório:<br/>a hitbox do Scooby deve ser MENOR, mais precisa e ADAPTÁVEL COM BASE NA DIREÇÃO do personagem."]
+
+GERAL --> G2["G2 — Regra autoritativa de referência visual<br/><br/>A implementação deve seguir EXATAMENTE a referência descrita no prompt anterior do usuário:<br/>a hitbox do Scooby deve ser composta por 2 retângulos, sem exceder a região do sprite.<br/><br/>Estrutura obrigatória:<br/>1. um retângulo principal para o CORPO/TRONCO;<br/>2. um retângulo secundário menor para a CABEÇA.<br/><br/>Esses dois retângulos devem cobrir exatamente a região do Scooby, sem sobrar área excessiva fora do personagem."]
+
+GERAL --> G3["G3 — Hitbox composta em 2 retângulos<br/><br/>Implementação recomendada:<br/>- definir uma estrutura de hitbox composta;<br/>- armazenar retCorpo {x, y, w, h};<br/>- armazenar retCabeca {x, y, w, h};<br/>- usar a união lógica desses dois retângulos nas checagens de colisão, ou manter ambas as checagens explicitamente quando o sistema exigir.<br/><br/>Objetivo:<br/>representar melhor o formato real do Scooby sem usar um único retângulo grande e impreciso."]
+
+GERAL --> G4["G4 — Hitbox adaptável por direção<br/><br/>Requisito obrigatório:<br/>a hitbox deve mudar de acordo com a direção atual do Scooby.<br/><br/>Direções a suportar:<br/>- cima;<br/>- baixo;<br/>- esquerda;<br/>- direita.<br/><br/>Regra:<br/>os offsets e dimensões dos 2 retângulos devem ser recalibrados por direção, pois cabeça e corpo mudam de posicionamento visual dependendo da orientação do sprite."]
+
+GERAL --> G5["G5 — Hitbox adaptável também por estado de animação, quando necessário<br/><br/>Além da direção, a IA deve validar idle, walk, run e carry.<br/><br/>Regra prática:<br/>se a geometria do Scooby variar levemente entre animações, a hitbox deve permanecer estável e coerente, sem exceder a silhueta principal.<br/>Se for possível manter um perfil único por direção para vários estados, isso é aceitável desde que a cobertura permaneça fiel."]
+
+GERAL --> G6["G6 — Regras geométricas da hitbox do Scooby<br/><br/>Critérios obrigatórios:<br/>- o retângulo do corpo deve cobrir o tronco principal;<br/>- o retângulo da cabeça deve cobrir apenas a cabeça/focinho de forma compacta;<br/>- nenhum dos retângulos deve ultrapassar exageradamente a silhueta do Scooby;<br/>- a hitbox não deve incluir sobra artificial na frente, atrás, acima ou abaixo;<br/>- a hitbox não deve cobrir espaço vazio."]
+
+GERAL --> G7["G7 — Não usar mais um único retângulo verde grande e deslocado como solução final<br/><br/>A visualização de debug deve refletir o novo modelo composto.<br/><br/>Se o sistema atual desenha apenas um retângulo verde, ele deve ser adaptado para:<br/>- desenhar os 2 retângulos de debug separadamente;<br/>ou<br/>- desenhar claramente a composição da hitbox real, desde que fique visível que existem 2 regiões distintas (corpo + cabeça)."]
+
+GERAL --> G8["G8 — Finalidade prática da hitbox composta<br/><br/>A nova hitbox deve melhorar:<br/>- colisão com móveis e obstáculos;<br/>- passagem em corredores estreitos;<br/>- sensação física do personagem no mapa;<br/>- coerência visual entre sprite e colisão.<br/><br/>Não é apenas uma alteração cosmética do retângulo de debug."]
+
+F1 --> F1A["F1.1 — Objetos bugados destacados pelo círculo preto<br/><br/>O círculo preto desenhado na imagem indica exatamente a região dos objetos problemáticos na Cozinha.<br/><br/>Requisito:<br/>tratar essa marcação como evidência visual direta do bug a ser corrigido."]
+
+F1 --> F1B["F1.2 — Remover o objeto/pedaço de madeira indevido<br/><br/>Problema observado:<br/>na região do balde azul e da vassoura, voltou a aparecer um objeto de madeira indevido.<br/><br/>Requisito obrigatório:<br/>remover esse objeto de madeira completamente.<br/><br/>Implementação:<br/>- revisar source rectangle do objeto de madeira;<br/>- revisar se existe sprite residual sendo desenhado por engano;<br/>- revisar ordem de renderização e posicionamento;<br/>- garantir que a remoção afete apenas o artefato incorreto."]
+
+F1 --> F1C["F1.3 — Não deixar o balde azul cortado<br/><br/>Problema observado:<br/>ao corrigir os objetos dessa região, o balde azul não pode permanecer cortado ou parcialmente encoberto indevidamente.<br/><br/>Requisito obrigatório:<br/>o balde azul deve aparecer inteiro, sem corte lateral, superior ou frontal.<br/><br/>Implementação:<br/>- revisar crop do balde azul;<br/>- revisar sobreposição com a vassoura e com o artefato de madeira;<br/>- preservar a sprite correta do balde."]
+
+F1 --> F1D["F1.4 — Correção localizada, sem regredir a vassoura<br/><br/>A vassoura já foi apontada em interações anteriores como estando proporcional/correta.<br/><br/>Regra:<br/>não modificar a vassoura desnecessariamente.<br/>Corrigir apenas o artefato de madeira e qualquer corte indevido do balde azul."]
+
+ORDEM --> O1["1 — Substituir a hitbox atual do Scooby por uma hitbox composta"]
+O1 --> O2["2 — Implementar retângulos separados para corpo e cabeça"]
+O2 --> O3["3 — Criar offsets/dimensões específicos por direção"]
+O3 --> O4["4 — Validar a hitbox em idle, walk, run e carry"]
+O4 --> O5["5 — Corrigir a região destacada na Cozinha: remover madeira indevida"]
+O5 --> O6["6 — Garantir o balde azul inteiro e sem corte"]
+O6 --> O7["7 — Revisar colisões e debug visual"]
+O7 --> VALID
+
+VALID --> V1["V1 — Teste da hitbox composta do Scooby<br/><br/>Aceite obrigatório:<br/>o debug deve mostrar 2 retângulos, um para o corpo e outro menor para a cabeça, cobrindo exatamente a região do Scooby, sem exceder."]
+
+VALID --> V2["V2 — Teste por direção<br/><br/>Aceite:<br/>ao mudar de direção (cima, baixo, esquerda, direita), os 2 retângulos devem se adaptar corretamente ao sprite correspondente."]
+
+VALID --> V3["V3 — Teste por animação<br/><br/>Aceite:<br/>idle, walk, run e carry devem manter a hitbox coerente, sem retângulos sobrando fora do Scooby e sem perda da cobertura necessária do corpo/cabeça."]
+
+VALID --> V4["V4 — Teste de colisão funcional<br/><br/>Aceite:<br/>a nova hitbox deve melhorar a precisão de colisão com obstáculos e corredores, especialmente em regiões estreitas, sem criar travamentos artificiais."]
+
+VALID --> V5["V5 — Teste da Cozinha<br/><br/>Aceite:<br/>- o artefato de madeira destacado pelo círculo preto desaparece completamente;<br/>- o balde azul aparece inteiro e não fica cortado;<br/>- a vassoura permanece correta;<br/>- nenhum novo artefato visual é introduzido."]
+
+VALID --> V6["DEFINIÇÃO DE PRONTO<br/><br/>A implementação só é considerada concluída quando a hitbox do Scooby estiver exatamente no conceito exigido pelo usuário (2 retângulos adaptáveis por direção, corpo + cabeça, sem exceder o sprite) e a região destacada na Cozinha estiver visualmente limpa, sem objeto de madeira indevido e sem cortar o balde azul."]
