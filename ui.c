@@ -188,8 +188,18 @@ void desenharTelaTeclasUI(const RecursosMapa* recursos,const Fase* fase,
     for(int i=0;i<4;i++)
     {
         float y=235+i*68.0f;
-        painel(260,y-14,510,y+30,9,al_map_rgba(255,211,87,32),al_map_rgba(255,221,100,105));
-        textoEscalado(fonte,al_map_rgb(255,227,114),385,y,1.6f,ALLEGRO_ALIGN_CENTRE,esquerda[i]);
+
+        /* Keycap de alto contraste. A versao anterior usava texto amarelo
+           sobre uma caixa amarelo-clara; na fonte builtin, especialmente em
+           Debug/Windows, as letras praticamente desapareciam. */
+        painel(260,y-14,510,y+30,9,
+               al_map_rgba(38,24,18,245),
+               al_map_rgb(255,220,92));
+
+        /* Sombra + texto branco garantem leitura independente do blender,
+           gamma ou do fundo da fase. */
+        textoEscalado(fonte,al_map_rgb(0,0,0),387,y+2,1.6f,ALLEGRO_ALIGN_CENTRE,esquerda[i]);
+        textoEscalado(fonte,al_map_rgb(255,248,224),385,y,1.6f,ALLEGRO_ALIGN_CENTRE,esquerda[i]);
         textoEscalado(fonte,al_map_rgb(239,235,238),555,y,1.55f,0,direita[i]);
     }
 
