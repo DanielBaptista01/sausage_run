@@ -74,12 +74,10 @@ HitboxScooby obterHitboxScooby(const Scooby* s, float x, float y)
     switch(s->direcaoSprite)
     {
         case DIRECAO_RIGHT:
-            /* [ corpo ][ cabeca ]; perfil lateral mais estreito e mais alto. */
             h.corpo =retCentro(x,y,-7.0f,-53.0f,42.0f,18.0f);
             h.cabeca=retCentro(x,y,25.0f,-63.0f,18.0f,18.0f);
             break;
         case DIRECAO_LEFT:
-            /* Espelho fisico da direita; nao altera a sprite LEFT aprovada. */
             h.corpo =retCentro(x,y, 7.0f,-53.0f,42.0f,18.0f);
             h.cabeca=retCentro(x,y,-25.0f,-63.0f,18.0f,18.0f);
             break;
@@ -106,6 +104,16 @@ static bool retDentroArea(Retangulo h, Retangulo a)
 bool scoobyDentroArea(const Scooby* s,float x,float y,const Fase* f)
 {
     if(!s||!f)return false;
+
+    /*
+     * A hitbox visual foi elevada para acompanhar o corpo. Por isso o limite
+     * do piso nao pode depender apenas dela: o anchor logico tambem precisa
+     * permanecer dentro da area caminhavel, impedindo voltar a subir na
+     * moldura de madeira inferior. A transicao de fase continua sendo a unica
+     * excecao, pois usa atualizarScoobyTransicao() e nao moverScooby().
+     */
+    if(!pontoDentroRetangulo(x,y,f->areaJogavel))return false;
+
     HitboxScooby h=obterHitboxScooby(s,x,y);
     return retDentroArea(h.corpo,f->areaJogavel) &&
            retDentroArea(h.cabeca,f->areaJogavel);
