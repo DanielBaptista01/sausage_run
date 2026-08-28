@@ -86,7 +86,18 @@ int main(void)
     EventoSom som={SOM_NENHUM,0,0,0,0,false,false};
     configurarFases(fases);
 
-    scooby.corpo.velocidade=135;scooby.corpo.hitboxLargura=36;scooby.corpo.hitboxAltura=18;scooby.corpo.hitboxOffsetX=0;scooby.corpo.hitboxOffsetY=-9;scooby.direcaoSprite=DIRECAO_UP;
+    /*
+     * Hitbox fisica centrada nas patas. O valor anterior (36x18) ficava
+     * artificialmente pequeno no F1 e permitia aproximacao excessiva das
+     * quinas. 46x22 acompanha melhor a base corporal sem usar a sprite toda.
+     */
+    scooby.corpo.velocidade=135;
+    scooby.corpo.hitboxLargura=46;
+    scooby.corpo.hitboxAltura=22;
+    scooby.corpo.hitboxOffsetX=0;
+    scooby.corpo.hitboxOffsetY=-8;
+    scooby.direcaoSprite=DIRECAO_UP;
+
     maria.corpo.velocidade=96;maria.corpo.hitboxLargura=28;maria.corpo.hitboxAltura=20;maria.corpo.hitboxOffsetX=0;maria.corpo.hitboxOffsetY=-10;maria.direcaoSprite=DIRECAO_LEFT;
     maria.alcanceVisao=265;maria.anguloVisao=72.0f*PI/180.0f;maria.alcanceAudicao=430;
 
