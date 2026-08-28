@@ -49,6 +49,92 @@ Retangulo hitboxPersonagem(const Personagem* p, float x, float y)
     };
 }
 
+/*
+ * Hitbox composta autoritativa do Scooby.
+ *
+ * A posicao logica (x,y) continua sendo o contato com o piso. Os retangulos
+ * sao deliberadamente menores que a silhueta animada: corpo/tronco + cabeca.
+ * Cauda, focinho projetado e patas em extremos de animacao nao entram na
+ * geometria fisica. O perfil e estavel entre idle/walk/run/carry e muda
+ * somente conforme a direcao, evitando jitter de colisao entre frames.
+ */
+static Retangulo retCentro(float x,float y,float ox,float oy,float w,float h)
+{
+    return (Retangulo){x+ox-w*.5f,y+oy-h*.5f,w,h};
+}
+
+HitboxScooby obterHitboxScooby(const Scooby* s, float x, float y)
+{
+    HitboxScooby h={{0,0,0,0},{0,0,0,0}};
+    if(!s)return h;
+
+    switch(s->direcaoSprite)
+    {
+        case DIRECAO_RIGHT:
+            /* [ corpo ][ cabeca ] */
+            h.corpo =retCentro(x,y,-8.0f,-31.0f,48.0f,22.0f);
+            h.cabeca=retCentro(x,y,25.0f,-32.0f,22.0f,22.0f);
+            break;
+        case DIRECAO_LEFT:
+            /* [ cabeca ][ corpo ] */
+            h.corpo =retCentro(x,y, 8.0f,-31.0f,48.0f,22.0f);
+            h.cabeca=retCentro(x,y,-25.0f,-32.0f,22.0f,22.0f);
+            break;
+        case DIRECAO_UP:
+            /* cabeca acima do tronco */
+            h.corpo =retCentro(x,y,0.0f,-29.0f,30.0f,34.0f);
+            h.cabeca=retCentro(x,y,0.0f,-50.0f,24.0f,20.0f);
+            break;
+        case DIRECAO_DOWN:
+        default:
+            /* cabeca abaixo/frente do tronco, sem atingir o ponto dos pes */
+            h.corpo =retCentro(x,y,0.0f,-34.0f,30.0f,34.0f);
+            h.cabeca=retCentro(x,y,0.0f,-14.0f,24.0f,20.0f);
+            break;
+    }
+    return h;
+}
+
+static bool retDentroArea(Retangulo h, Retangulo a)
+{
+    return h.x >= a.x && h.y >= a.y &&
+           h.x+h.largura <= a.x+a.largura &&
+           h.y+h.altura <= a.y+a.altura;
+}
+
+bool scoobyDentroArea(const Scooby* s,float x,float y,const Fase* f)
+{
+    if(!s||!f)return false;
+    HitboxScooby h=obterHitboxScooby(s,x,y);
+    return retDentroArea(h.corpo,f->areaJogavel) &&
+           retDentroArea(h.cabeca,f->areaJogavel);
+}
+
+bool scoobyColide(const Scooby* s,float x,float y,const Fase* f)
+{
+    if(!s||!f||!scoobyDentroArea(s,x,y,f))return true;
+    HitboxScooby h=obterHitboxScooby(s,x,y);
+
+    for(int i=0;i<f->quantidadeObstaculos;i++)
+    {
+        const Obstaculo* o=&f->obstaculos[i];
+        if(!o->bloqueiaMovimento)continue;
+        Retangulo r={o->x,o->y,o->largura,o->altura};
+        if(retangulosIntersectam(h.corpo,r)||retangulosIntersectam(h.cabeca,r))
+            return true;
+    }
+    return false;
+}
+
+void moverScooby(Scooby* s,float dx,float dy,const Fase* f)
+{
+    if(!s||!f)return;
+    float nx=s->corpo.x+dx;
+    if(!scoobyColide(s,nx,s->corpo.y,f))s->corpo.x=nx;
+    float ny=s->corpo.y+dy;
+    if(!scoobyColide(s,s->corpo.x,ny,f))s->corpo.y=ny;
+}
+
 bool personagemDentroArea(const Personagem* p, float x, float y, const Fase* f)
 {
     if (!p || !f) return false;
@@ -191,9 +277,12 @@ void validarConfiguracaoFase(Fase* f, const Scooby* s, const Maria* m, int indic
 {
     if (!f || !s || !m) return;
     Ponto ajustado;
-    if (!pontoLivreParaPersonagem(&s->corpo,f,f->spawnScooby.x,f->spawnScooby.y))
+
+    /* O spawn do Scooby usa a hitbox composta real. */
+    if (scoobyColide(s,f->spawnScooby.x,f->spawnScooby.y,f))
     {
-        printf("WARN F%d %s: spawn Scooby invalido\n",indice+1,f->nome);
+        printf("WARN F%d %s: spawn Scooby invalido para hitbox composta\n",indice+1,f->nome);
+        /* Mantemos o buscador generico como fallback de recuperacao. */
         if(procurarPontoLivreProximo(&s->corpo,f,f->spawnScooby,&ajustado)) f->spawnScooby=ajustado;
     }
     if (!pontoLivreParaPersonagem(&m->corpo,f,f->spawnMaria.x,f->spawnMaria.y))
@@ -274,12 +363,5 @@ void resetarPersonagensNaFase(Scooby* s, Maria* m, Bola* b,
 bool chegouNaSaidaComBola(const Scooby* s, const Fase* f)
 {
     if(!s||!f||!s->carregandoBola)return false;
-
-    /*
-     * O checkpoint representa a abertura real. Usar apenas intersecao da
-     * hitbox fazia a fase disparar lateralmente antes das patas entrarem no
-     * vao. O ponto logico de Scooby e exatamente o contato das patas com o
-     * chao, portanto ele precisa estar DENTRO do trigger.
-     */
     return pontoDentroRetangulo(s->corpo.x,s->corpo.y,f->triggerSaida);
 }
