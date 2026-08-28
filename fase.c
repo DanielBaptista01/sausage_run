@@ -125,10 +125,17 @@ static void cozinha(Fase* f)
     objeto(f,838,396,160,385,790,425,.94,.04,.45,.92,.53,true,true,true,2,5);
     objeto(f,451,615,192,243,110,710,.84,.04,.52,.92,.46,true,true,true,2,6);
 
-    /* Retira somente a faixa de madeira do recorte do balde. A vassoura nao
-       foi alterada nesta revisao. */
-    objeto(f,700,708,72,124,960,730,.88,.10,.48,.80,.48,true,false,false,2,7);
-    objeto(f,975,667,106,203,1050,690,.90,.17,.72,.66,.25,false,false,false,0,8);
+    /*
+     * Regiao balde/vassoura revisada a partir da imagem marcada:
+     * - o balde volta ao crop completo (88 px), evitando corte lateral;
+     * - os 24 px iniciais do antigo crop da vassoura eram uma barra de
+     *   madeira pertencente a outra celula do atlas;
+     * - removemos apenas essa faixa e compensamos mapaX em +22 unidades,
+     *   mantendo a parte vermelha da vassoura exatamente na mesma posicao e
+     *   na mesma escala visual aprovada anteriormente.
+     */
+    objeto(f,700,708,88,124,960,730,.88,.10,.48,.80,.48,true,false,false,2,7);
+    objeto(f,999,667,82,203,1072,690,.90,.17,.72,.66,.25,false,false,false,0,8);
     objeto(f,240,817,177,241,1200,750,.78,.15,.68,.70,.30,true,false,false,2,9);
 
     f->spawnScooby=(Ponto){mapaParaTelaX(705),mapaParaTelaY(840)};f->spawnMaria=(Ponto){mapaParaTelaX(1015),mapaParaTelaY(550)};
