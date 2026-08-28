@@ -1,0 +1,76 @@
+flowchart TD
+
+    ROOT["SAUSAGE RUN — ADENDO TÉCNICO DE CORREÇÕES<br/><br/>Objetivo: formalizar, com precisão técnica, as correções observadas nas capturas de tela para implementação por IA.<br/><br/>Escopo: objetos, regiões de obstáculo, checkpoints, hitbox do Scooby, recorte de sprite sheets, passagem atrás de móveis, linha superior de bloqueio e reconstrução integral da Fase 4."]
+
+    ROOT --> GERAL["A — CORREÇÕES GERAIS"]
+    ROOT --> F1["B — FASE 1: COZINHA"]
+    ROOT --> F2["C — FASE 2: SALA"]
+    ROOT --> F3["D — FASE 3: BANHEIRO"]
+    ROOT --> F4["E — FASE 4: QUARTO"]
+    ROOT --> ORDEM["F — ORDEM DE IMPLEMENTAÇÃO"]
+    ROOT --> VALID["G — VALIDAÇÃO / CRITÉRIOS DE ACEITE"]
+
+    GERAL --> G1["G1 — Corrigir vazamento de sprite sheet em movimentos de Scooby e Maria<br/><br/>Problema observado:<br/>ao executar movimentos, aparece parte de sprites vizinhas ao redor do frame atual.<br/><br/>Requisito obrigatório:<br/>ao renderizar um movimento, deve aparecer SOMENTE a célula correspondente à animação e à direção atual, sem mostrar nenhuma parte de outra célula da sprite sheet.<br/><br/>Implementação:<br/>- revisar frameW e frameH reais por animação;<br/>- revisar sx e sy;<br/>- revisar padding/margens;<br/>- validar todas as animações e direções."]
+
+    GERAL --> G2["G2 — Ajustar hitbox do Scooby (retângulo verde) para ficar rente ao corpo<br/><br/>Problema observado:<br/>a hitbox atual parece pequena ou deslocada em relação ao corpo do Scooby.<br/><br/>Requisito:<br/>o retângulo verde deve ficar mais rente ao corpo do Scooby, especialmente na região dos pés/patas, para parecer mais real e representar melhor a colisão física.<br/><br/>Implementação:<br/>- recalibrar hitboxW e hitboxH;<br/>- ajustar offsets da hitbox;<br/>- manter a hitbox coerente com a jogabilidade."]
+
+    GERAL --> G3["G3 — Aumentar um pouco a região superior da linha vermelha de bloqueio<br/><br/>Problema observado:<br/>a linha superior/perimetral vermelha está impedindo ou limitando de forma inadequada a passagem atrás de móveis, ou está muito próxima da parede, causando sensação de escalar a parede.<br/><br/>Requisito:<br/>ajustar a região superior de bloqueio para permitir que o personagem ande atrás dos móveis quando isso fizer sentido, sem permitir que ele escale ou entre na parede.<br/><br/>Implementação:<br/>- mover ligeiramente a linha/bloqueio superior;<br/>- preservar a parede como intransponível;<br/>- abrir faixa de circulação apenas onde o layout permitir."]
+
+    GERAL --> G4["G4 — Padronizar largura do checkpoint pelo tamanho da linha preta superior<br/><br/>Problema observado:<br/>o checkpoint/trigger de saída está mais largo do que a abertura visual indicada pela linha preta/porta/escada.<br/><br/>Requisito:<br/>o checkpoint deve ter exatamente a mesma largura da linha preta superior de referência.<br/><br/>Implementação:<br/>- redefinir triggerSaida.w;<br/>- centralizar o trigger na abertura;<br/>- não permitir ativação fora do vão real."]
+
+    GERAL --> G5["G5 — Metodologia obrigatória para obstáculos<br/><br/>Todos os obstáculos devem representar a área real ocupada pela base do móvel/objeto.<br/><br/>Regras:<br/>- não usar retângulos exagerados quando isso bloquear corredores indevidamente;<br/>- não usar retângulos pequenos demais que permitam entrar dentro do objeto;<br/>- quando houver vão real entre objetos, esse vão deve ser transitável;<br/>- quando houver móvel composto, é permitido dividir o obstáculo em mais de uma região."]
+
+    F1 --> F1A["F1.1 — Corrigir sprite da vassoura: parte frontal está cortada<br/><br/>Problema observado:<br/>a parte frontal da sprite da vassoura não está aparecendo inteira.<br/><br/>Requisito:<br/>a vassoura deve ser mostrada integralmente, sem corte na parte frontal.<br/><br/>Implementação:<br/>- revisar sx, sy, sw, sh do objeto da vassoura na sprite sheet;<br/>- revisar escala e posicionamento;<br/>- garantir que nenhum recorte esteja truncando a extremidade frontal."]
+
+    F1 --> F1B["F1.2 — Remover sobreposição de mobília no fogão<br/><br/>Problema observado:<br/>há mobília/objeto sobreposto ao fogão.<br/><br/>Requisito:<br/>esse móvel deve ser reposicionado para a parede da direita, sem sobrepor o fogão e sem bloquear indevidamente a circulação.<br/><br/>Implementação:<br/>- reposicionar o objeto na parede direita;<br/>- revalidar profundidade e colisão;<br/>- garantir alinhamento visual com os demais móveis da fase."]
+
+    F1 --> F1C["F1.3 — Validar saída/checkpoint da cozinha<br/><br/>O checkpoint da cozinha também deve respeitar a regra geral de largura: deve ter o mesmo tamanho da linha preta/acesso real da saída.<br/><br/>Implementação:<br/>- reduzir trigger de saída para a largura exata da abertura;<br/>- centralizar na escada/porta;<br/>- impedir acionamento fora do vão."]
+
+    F2 --> F2A["F2.1 — Corrigir obstáculo da caixa de brinquedos<br/><br/>Problema observado:<br/>o obstáculo da caixa de brinquedos está desproporcional, maior do que a área física real da caixa.<br/><br/>Requisito:<br/>o obstáculo deve ter exatamente a mesma largura da caixa de brinquedos, sem expandir indevidamente para os lados.<br/><br/>Objetivo:<br/>permitir passagem no vão entre a caixa de brinquedos e o vaso de plantas."]
+
+    F2 --> F2B["F2.2 — Corrigir obstáculo do vaso de plantas<br/><br/>Problema observado:<br/>o obstáculo do vaso também está desproporcional.<br/><br/>Requisito:<br/>o colisor do vaso deve coincidir com a base real do vaso de plantas.<br/><br/>Objetivo:<br/>somado ao ajuste da caixa de brinquedos, criar um corredor utilizável entre os dois objetos."]
+
+    F2 --> F2C["F2.3 — Garantir passagem entre caixa de brinquedos e vaso<br/><br/>Regra funcional:<br/>após ajustar os dois obstáculos, deve existir um vão livre e navegável entre a caixa de brinquedos e o vaso.<br/><br/>Implementação:<br/>- reduzir larguras excessivas dos colisores;<br/>- validar que a hitbox do Scooby cabe no espaço com margem confortável;<br/>- não reposicionar os objetos de forma a fechar novamente o corredor."]
+
+    F2 --> F2D["F2.4 — Dividir obstáculo do computador do pai em 2 quadrados/retângulos<br/><br/>Problema observado:<br/>a região de obstáculo do conjunto do computador do pai está sendo representada por um único retângulo grande, bloqueando um vão que deveria ser transitável.<br/><br/>Requisito:<br/>dividir esse obstáculo em 2 regiões distintas:<br/>1. uma para a região do móvel/mesa;<br/>2. outra para a cadeira.<br/><br/>Objetivo:<br/>permitir caminhar pelo vão entre essas duas partes, caso visualmente ele exista no cenário."]
+
+    F2 --> F2E["F2.5 — Regra de modelagem de obstáculo composto<br/><br/>Para a estação do computador do pai, a IA deve tratar o conjunto como geometria composta, e não como um único bloco retangular bruto.<br/><br/>Implementação:<br/>- criar dois colisores principais, ou mais se necessário;<br/>- respeitar o contorno físico do móvel e da cadeira;<br/>- manter navegável apenas a área visualmente livre."]
+
+    F3 --> F3A["F3.1 — Diminuir largura do checkpoint da fase 3<br/><br/>Problema observado:<br/>o checkpoint/trigger está mais largo do que a abertura indicada pela linha preta superior.<br/><br/>Requisito:<br/>diminuir a largura do checkpoint para o mesmo tamanho da linha preta em cima.<br/><br/>Implementação:<br/>- redefinir triggerSaida.w;<br/>- alinhar x e largura do trigger com a abertura real;<br/>- impedir que a saída seja ativada por aproximação lateral."]
+
+    F3 --> F3B["F3.2 — Validar centralização do trigger do banheiro<br/><br/>Após reduzir a largura, o trigger deve permanecer centralizado em relação à abertura visual, sem deslocamento lateral."]
+
+    F4 --> F4A["F4.1 — Reconstruir integralmente a Fase 4 com base em quarto_objetos.png<br/><br/>Problema observado:<br/>a Fase 4 está completamente bugada e desproporcional.<br/><br/>Requisito principal:<br/>refazer a fase 4 utilizando os respectivos móveis/objetos corretos com base na sprite 'quarto_objetos.png'.<br/><br/>Não aceitar formas simplificadas, objetos ausentes, escalas incoerentes ou layout improvisado."]
+
+    F4 --> F4B["F4.2 — Verificar asset prioritário do quarto<br/><br/>A IA deve garantir que 'quarto_objetos.png' seja a fonte principal dos objetos da Fase 4, desde que o arquivo exista e seja válido.<br/><br/>Implementação:<br/>- revisar carregamento em recursos.c;<br/>- revisar uso da folha em fase.c;<br/>- revisar source rectangles de cada móvel;<br/>- revisar escalas para manter compatibilidade visual com as demais fases."]
+
+    F4 --> F4C["F4.3 — Recriar layout do quarto de forma coerente<br/><br/>Após carregar corretamente os objetos do quarto:<br/>- reposicionar cama, berço, armário, espelho, mesa, estantes, puffs e demais móveis;<br/>- distribuir os objetos com circulação legível;<br/>- refazer colisões, depth/baseY, spawns, waypoints e saída;<br/>- garantir que a fase deixe de parecer bugada ou desproporcional."]
+
+    F4 --> F4D["F4.4 — Refazer obstáculos e trigger da Fase 4<br/><br/>Como a fase será reconstruída, todos os obstáculos, área caminhável e checkpoint de saída devem ser recalculados com base no novo layout real do quarto."]
+
+    ORDEM --> O1["1 — Corrigir recorte das sprite sheets de Scooby e Maria"]
+    O1 --> O2["2 — Ajustar hitbox do Scooby"]
+    O2 --> O3["3 — Ajustar a linha superior/perimetral vermelha para permitir passagem atrás dos móveis"]
+    O3 --> O4["4 — Corrigir checkpoint padrão: largura igual à linha preta de referência"]
+    O4 --> O5["5 — Corrigir objetos da Fase 1: vassoura e mobília sobre o fogão"]
+    O5 --> O6["6 — Corrigir obstáculos proporcionais da Fase 2: caixa, vaso e computador do pai"]
+    O6 --> O7["7 — Corrigir checkpoint da Fase 3"]
+    O7 --> O8["8 — Reconstruir integralmente a Fase 4 a partir de quarto_objetos.png"]
+    O8 --> O9["9 — Revalidar colisões, triggers, profundidade, spawns e navegação"]
+    O9 --> VALID
+
+    VALID --> V1["V1 — Teste de sprites<br/><br/>Aceite:<br/>nenhum movimento do Scooby ou da Maria pode mostrar pedaços de sprite vizinha. Cada animação deve exibir apenas seu frame correto."]
+
+    VALID --> V2["V2 — Teste da hitbox do Scooby<br/><br/>Aceite:<br/>o retângulo verde deve ficar visualmente rente ao corpo/pés do Scooby e representar melhor sua presença física no mapa."]
+
+    VALID --> V3["V3 — Teste da linha superior de bloqueio<br/><br/>Aceite:<br/>deve ser possível andar atrás dos móveis quando o layout permitir, sem escalar a parede. A parede continua intransponível."]
+
+    VALID --> V4["V4 — Teste da Fase 1<br/><br/>Aceite:<br/>- vassoura inteira, sem corte frontal;<br/>- fogão sem mobília sobreposta;<br/>- móvel reposicionado na parede direita;<br/>- checkpoint alinhado e com largura correta."]
+
+    VALID --> V5["V5 — Teste da Fase 2<br/><br/>Aceite:<br/>- obstáculo da caixa de brinquedos com largura proporcional à caixa;<br/>- obstáculo do vaso proporcional à base do vaso;<br/>- passagem livre entre caixa e vaso;<br/>- obstáculo do computador do pai dividido em duas partes;<br/>- vão navegável onde visualmente existir espaço."]
+
+    VALID --> V6["V6 — Teste da Fase 3<br/><br/>Aceite:<br/>checkpoint com a mesma largura da linha preta superior e centralizado na abertura."]
+
+    VALID --> V7["V7 — Teste da Fase 4<br/><br/>Aceite:<br/>- fase reconstruída com base em quarto_objetos.png;<br/>- objetos corretos do quarto aparecem;<br/>- layout proporcional e coerente;<br/>- colisões, spawns, waypoints e saída recalculados;<br/>- a fase deixa de estar bugada/desproporcional."]
+
+    VALID --> V8["DEFINIÇÃO DE PRONTO<br/><br/>O trabalho só é considerado concluído quando todas as correções acima estiverem implementadas, integradas entre si e validadas sem regressões nas quatro fases."]
