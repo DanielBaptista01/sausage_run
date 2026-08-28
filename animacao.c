@@ -215,10 +215,10 @@ bool carregarSprites(Scooby* s,Maria* m)
     if(!s||!m)return false;
 
     /* Retangulo preto autoritativo: tronco lateral, sem cabeca/cauda. */
-    s->corpo.hitboxLargura=76.0f;
-    s->corpo.hitboxAltura=26.0f;
-    s->corpo.hitboxOffsetX=-13.0f;
-    s->corpo.hitboxOffsetY=-53.0f;
+    s->corpo.hitboxLargura=62.0f;
+    s->corpo.hitboxAltura=30.0f;
+    s->corpo.hitboxOffsetX=-6.0f;
+    s->corpo.hitboxOffsetY=-61.0f;
 
     if(!carregarAnimacao(&s->idle,"ScoobySprites/idle.png",.20f,.37f,.50f,.90f))return false;
     if(!carregarAnimacao(&s->walk,"ScoobySprites/walk.png",.12f,.37f,.50f,.90f))return false;
