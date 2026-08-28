@@ -142,7 +142,9 @@ static void cozinha(Fase* f)
     f->areaJogavel=areaFonte(82,230,1284,745);
     f->triggerSaida=areaFonte(495,895,130,70);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(560),mapaParaTelaY(965)};
 
-    objeto(f,25,19,243,354,100,145,1.00,.05,.60,.90,.38,true,true,true,2,0);
+    /* Geladeira: recua somente a borda ESQUERDA do colisor e preserva o
+       mesmo limite direito (.14 + .81 = .95), liberando o corredor visual. */
+    objeto(f,25,19,243,354,100,145,1.00,.14,.60,.81,.38,true,true,true,2,0);
     objeto(f,326,71,486,269,360,145,1.00,.01,.53,.98,.46,true,true,true,2,1);
     objeto(f,864,96,200,251,850,150,.96,.04,.52,.92,.46,true,true,true,2,2);
     objeto(f,1064,96,75,251,1290,470,.96,.08,.52,.84,.44,true,true,true,1,10);
@@ -151,8 +153,11 @@ static void cozinha(Fase* f)
     objeto(f,838,396,160,385,790,425,.94,.04,.45,.92,.53,true,true,true,2,5);
     objeto(f,451,615,192,243,110,710,.84,.04,.52,.92,.46,true,true,true,2,6);
 
+    /* Conjunto balde + vassoura: a vassoura e desenhada primeiro, com a base
+       visual dentro do balde. O balde continua inteiro e e o unico colisor
+       significativo do conjunto; o cabo nao cria uma barreira gigante. */
+    objeto(f,999,667,82,203,968,630,.90,.17,.72,.66,.25,false,false,false,0,8);
     objeto(f,700,708,88,124,960,730,.88,.10,.48,.80,.48,true,false,false,2,7);
-    objeto(f,999,667,82,203,1072,690,.90,.17,.72,.66,.25,false,false,false,0,8);
     objeto(f,240,817,177,241,1200,750,.78,.15,.68,.70,.30,true,false,false,2,9);
 
     /* Fogao/base superior comeca aproximadamente em y=275. */
