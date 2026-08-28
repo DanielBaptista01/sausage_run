@@ -36,6 +36,7 @@ static void waypoint(Fase* f,float x,float y)
 {
     if(f->quantidadeWaypoints<MAX_WAYPOINTS)f->waypoints[f->quantidadeWaypoints++]=(Ponto){mapaParaTelaX(x),mapaParaTelaY(y)};
 }
+
 static void spawnBola(Fase* f,float x,float y)
 {
     if(f->quantidadeSpawnsBola<MAX_SPAWNS_BOLA)f->spawnsBola[f->quantidadeSpawnsBola++]=(Ponto){mapaParaTelaX(x),mapaParaTelaY(y)};
@@ -51,7 +52,12 @@ static Retangulo baseObjeto(const ObjetoMapa* o)
 static void paredesPerimetro(Fase* f)
 {
     Retangulo a=f->areaJogavel;
-    const float e=7.0f;
+    const float e=10.0f;
+
+    /*
+     * O retangulo areaJogavel representa SOMENTE piso. A borda superior
+     * deve portanto bloquear completamente a entrada em textura de parede.
+     */
     obstaculo(f,a.x,a.y,a.largura,e,true,true);
     obstaculo(f,a.x,a.y,e,a.altura,true,true);
     obstaculo(f,a.x+a.largura-e,a.y,e,a.altura,true,true);
@@ -61,6 +67,7 @@ static void paredesPerimetro(Fase* f)
     float leftW=gapL-a.x;
     float rightX=gapR;
     float rightW=a.x+a.largura-rightX;
+
     if(leftW>0)obstaculo(f,a.x,a.y+a.altura-e,leftW,e,true,true);
     if(rightW>0)obstaculo(f,rightX,a.y+a.altura-e,rightW,e,true,true);
 }
@@ -69,26 +76,33 @@ void reconstruirColisoesFase(Fase* f)
 {
     if(!f)return;
     f->quantidadeObstaculos=0;
+
     for(int i=0;i<f->quantidadeObjetos;i++)
     {
         ObjetoMapa* o=&f->objetos[i];
         if(!o->bloqueiaMovimento)continue;
+
         Retangulo b=baseObjeto(o);
         obstaculo(f,b.x-2,b.y-2,b.largura+4,b.altura+4,o->bloqueiaVisao,false);
     }
+
     paredesPerimetro(f);
 }
 
 void desenharObjeto(const Fase* f,const ObjetoMapa* o)
 {
     if(!f||!o||!f->folhaObjetos)return;
+
     int inset=o->insetFonte;
     int sx=o->sx+inset,sy=o->sy+inset,sw=o->sw-inset*2,sh=o->sh-inset*2;
     if(sw<=0||sh<=0)return;
+
     int fw=al_get_bitmap_width(f->folhaObjetos),fh=al_get_bitmap_height(f->folhaObjetos);
     if(sx<0||sy<0||sx+sw>fw||sy+sh>fh)return;
+
     float e=MAPA_ESCALA*o->escala;
     float dx=mapaParaTelaX(o->mapaX)+inset*e,dy=mapaParaTelaY(o->mapaY)+inset*e;
+
     al_draw_scaled_bitmap(f->folhaObjetos,sx,sy,sw,sh,dx,dy,sw*e,sh*e,0);
 }
 
@@ -101,14 +115,22 @@ float baseYObjeto(const ObjetoMapa* o)
 bool validarObjetosFase(const Fase* f)
 {
     if(!f||!f->folhaObjetos)return false;
+
     int w=al_get_bitmap_width(f->folhaObjetos),h=al_get_bitmap_height(f->folhaObjetos);
     bool ok=true;
+
     for(int i=0;i<f->quantidadeObjetos;i++)
     {
         const ObjetoMapa* o=&f->objetos[i];
+
         if(o->sx<0||o->sy<0||o->sw<=0||o->sh<=0||o->sx+o->sw>w||o->sy+o->sh>h)
-        {printf("ERRO %s objeto %d crop [%d,%d,%d,%d] folha=%dx%d\n",f->nome,i,o->sx,o->sy,o->sw,o->sh,w,h);ok=false;}
+        {
+            printf("ERRO %s objeto %d crop [%d,%d,%d,%d] folha=%dx%d\n",
+                   f->nome,i,o->sx,o->sy,o->sw,o->sh,w,h);
+            ok=false;
+        }
     }
+
     return ok;
 }
 
@@ -160,11 +182,28 @@ static void sala(Fase* f)
 
 static void banheiro(Fase* f)
 {
-    f->nome="Banheiro";f->caminhoFundo="mapa/banheiro.png";f->caminhoObjetos="mapa/banheiro_objetos.png";f->tipoSaida=SAIDA_PORTA;
-    f->areaJogavel=areaFonte(78,125,1285,900);
-    f->triggerSaida=areaFonte(585,905,280,105);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(725),mapaParaTelaY(990)};
+    f->nome="Banheiro";
+    f->caminhoFundo="mapa/banheiro.png";
+    f->caminhoObjetos="mapa/banheiro_objetos.png";
+    f->tipoSaida=SAIDA_PORTA;
 
+    /*
+     * No mapa do banheiro, y≈125 ainda e a FAIXA AZUL DA PAREDE.
+     * O piso inicia apenas depois do rodape horizontal, aproximadamente
+     * em y=320 da imagem-fonte. A area caminhavel agora comeca no piso.
+     * Isso impede Scooby/Maria de subir pela textura da parede e chegar ao
+     * topo do box/janela, bug confirmado no F1 enviado pelo usuario.
+     */
+    f->areaJogavel=areaFonte(78,320,1285,705);
+
+    /* A saida permanece na abertura inferior real. */
+    f->triggerSaida=areaFonte(585,905,280,105);
+    f->alvoEntradaSaida=(Ponto){mapaParaTelaX(725),mapaParaTelaY(990)};
+
+    /* Box: praticamente toda a projecao e solida; nenhuma entrada interna. */
     objeto(f,42,19,437,478,65,130,.88,.02,.06,.96,.91,true,true,false,2,0);
+
+    /* Vaso, estante, prateleira/cestos e pia: base fisica completa. */
     objeto(f,539,92,167,359,1000,145,.92,.05,.50,.90,.48,true,true,true,2,1);
     objeto(f,809,36,174,431,590,300,.90,.04,.48,.92,.50,true,true,true,2,2);
     objeto(f,1063,58,279,193,1085,105,.84,.04,.48,.92,.50,true,true,true,2,3);
@@ -177,8 +216,12 @@ static void banheiro(Fase* f)
 
     f->spawnScooby=(Ponto){mapaParaTelaX(460),mapaParaTelaY(820)};
     f->spawnMaria=(Ponto){mapaParaTelaX(835),mapaParaTelaY(540)};
-    waypoint(f,500,450);waypoint(f,750,450);waypoint(f,950,450);waypoint(f,1000,650);waypoint(f,850,700);waypoint(f,500,720);
-    spawnBola(f,850,650);spawnBola(f,560,780);spawnBola(f,780,560);spawnBola(f,980,650);
+
+    waypoint(f,500,450);waypoint(f,750,450);waypoint(f,950,450);
+    waypoint(f,1000,650);waypoint(f,850,700);waypoint(f,500,720);
+
+    spawnBola(f,850,650);spawnBola(f,560,780);
+    spawnBola(f,780,560);spawnBola(f,980,650);
 }
 
 static void quarto(Fase* f)
@@ -187,6 +230,7 @@ static void quarto(Fase* f)
     f->areaJogavel=areaFonte(82,130,1280,895);
     f->triggerSaida=areaFonte(1040,890,210,120);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1145),mapaParaTelaY(990)};
 
+    /* Estes crops correspondem EXCLUSIVAMENTE ao atlas HD interno. */
     objeto(f,20,20,300,210,115,165,1.05,.04,.48,.92,.50,true,true,true,0,0);
     objeto(f,350,20,200,210,560,165,.92,.06,.48,.88,.50,true,true,true,0,1);
     objeto(f,580,20,180,230,935,145,.94,.05,.53,.90,.45,true,true,true,0,2);
@@ -208,7 +252,14 @@ static void quarto(Fase* f)
 void configurarFases(Fase fases[QTD_FASES])
 {
     if(!fases)return;
+
     memset(fases,0,sizeof(Fase)*QTD_FASES);
-    cozinha(&fases[0]);sala(&fases[1]);banheiro(&fases[2]);quarto(&fases[3]);
-    for(int i=0;i<QTD_FASES;i++)reconstruirColisoesFase(&fases[i]);
+
+    cozinha(&fases[0]);
+    sala(&fases[1]);
+    banheiro(&fases[2]);
+    quarto(&fases[3]);
+
+    for(int i=0;i<QTD_FASES;i++)
+        reconstruirColisoesFase(&fases[i]);
 }
