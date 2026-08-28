@@ -1,0 +1,100 @@
+flowchart TD
+
+ROOT["SAUSAGE RUN — ADENDO TÉCNICO CRÍTICO DE COLISÃO E AJUSTES DA COZINHA<br/><br/>Objetivo: eliminar definitivamente travamentos do Scooby causados por interpenetração entre hitboxes, corrigir a passagem ao lado da geladeira e reorganizar vassoura/balde para eliminar artefatos de sprite.<br/><br/>Prioridade: CRÍTICA — a colisão não pode permitir que a hitbox do Scooby entre, mesmo parcialmente, em uma hitbox de obstáculo."]
+
+ROOT --> COLL["A — COLISÃO / INTERPENETRAÇÃO"]
+ROOT --> DIR["B — MUDANÇA DE DIREÇÃO PRÓXIMA A OBSTÁCULOS"]
+ROOT --> F1["C — FASE 1: COZINHA"]
+ROOT --> DBG["D — DEBUG / F1"]
+ROOT --> ORDER["E — ORDEM DE IMPLEMENTAÇÃO"]
+ROOT --> VALID["F — TESTES E CRITÉRIOS DE ACEITE"]
+
+%% ============================================================================
+%% A — COLISÃO / INTERPENETRAÇÃO
+%% ============================================================================
+
+COLL --> C1["A1 — REGRA CRÍTICA: a hitbox do Scooby NUNCA pode entrar dentro da hitbox de um obstáculo<br/><br/>Problema observado:<br/>a hitbox do Scooby chega a tocar/penetrar parcialmente hitboxes de móveis e objetos. Depois disso, o personagem fica preso porque a próxima atualização já começa em estado de sobreposição.<br/><br/>Requisito absoluto:<br/>após qualquer atualização de movimento, deve valer:<br/>intersecao(hitboxScooby, obstaculo) == false<br/>para TODOS os obstáculos sólidos."]
+
+COLL --> C2["A2 — Não aceitar interpenetração parcial<br/><br/>Não é suficiente impedir que o centro do Scooby atravesse o móvel.<br/>Nenhuma borda da hitbox pode ficar para dentro do retângulo sólido.<br/><br/>Se a posição candidata produzir qualquer overlap positivo em X e Y, a posição deve ser rejeitada ou corrigida antes de ser aplicada."]
+
+COLL --> C3["A3 — Movimento deve testar posição candidata ANTES de gravar x/y<br/><br/>Fluxo esperado:<br/>1. calcular novoX/novoY;<br/>2. montar hitbox candidata com a direção atual;<br/>3. testar todos os obstáculos;<br/>4. somente aplicar x/y se não houver colisão;<br/>5. se houver colisão, manter o eixo bloqueado e permitir deslizamento no outro eixo quando possível."]
+
+COLL --> C4["A4 — Resolução por eixo obrigatória<br/><br/>Para reduzir travamentos em quinas:<br/>- resolver X e Y separadamente;<br/>- testar X candidato mantendo Y atual;<br/>- aceitar X se livre;<br/>- depois testar Y candidato usando o X já aceito;<br/>- aceitar Y se livre.<br/><br/>Isso deve permitir deslizar ao lado de móveis sem penetrar neles."]
+
+COLL --> C5["A5 — Proibir estado inicial de frame já penetrado<br/><br/>Se, por bug legado ou mudança de direção, a hitbox já estiver sobreposta a um obstáculo no início do frame, executar correção de penetração:<br/>- calcular menor vetor de separação (minimum translation vector / MTV) entre hitbox e obstáculo;<br/>- mover Scooby para fora pelo menor eixo;<br/>- nunca deixar o personagem permanecer em overlap para o frame seguinte."]
+
+COLL --> C6["A6 — Margem de contato<br/><br/>Adicionar pequena tolerância epsilon para evitar jitter numérico.<br/>Exemplo conceitual:<br/>considerar contato de borda permitido, mas overlap positivo maior que epsilon proibido.<br/><br/>Objetivo:<br/>Scooby pode encostar no móvel, mas não entrar dentro dele."]
+
+COLL --> C7["A7 — Hitbox deve ser recalculada com base na direção ANTES do teste de colisão<br/><br/>Como a hitbox do Scooby pode mudar de geometria/offset conforme a direção, qualquer alteração de direção deve recalcular imediatamente a hitbox correspondente ANTES de validar a posição.<br/><br/>Não pode acontecer:<br/>1. Scooby está encostado no móvel;<br/>2. muda direção;<br/>3. nova hitbox cresce/desloca para dentro do móvel;<br/>4. jogo aceita a nova direção e deixa overlap."]
+
+%% ============================================================================
+%% B — MUDANÇA DE DIREÇÃO
+%% ============================================================================
+
+DIR --> D1["B1 — BUG CRÍTICO: ao mudar de direção perto de obstáculo, parte superior/inferior da hitbox entra no objeto<br/><br/>Sintoma observado:<br/>Scooby anda ao lado de um obstáculo e, ao mudar a direção, a nova configuração da hitbox ocupa uma região que já pertence ao obstáculo, fazendo o personagem ficar preso."]
+
+DIR --> D2["B2 — Validar mudança de direção como transformação física<br/><br/>Ao receber nova direção:<br/>- calcular hitboxNovaDirecao na posição atual;<br/>- verificar colisão com todos os obstáculos;<br/>- se a nova hitbox penetrar algum obstáculo, NÃO aplicar diretamente a geometria que produz overlap."]
+
+DIR --> D3["B3 — Estratégia de correção para troca de direção bloqueada<br/><br/>Opções válidas:<br/>A. ajustar posição do Scooby para fora do obstáculo pelo menor deslocamento possível e então aplicar direção;<br/>B. manter temporariamente a hitbox anterior até existir espaço suficiente;<br/>C. usar uma hitbox direcional com dimensões/offsets calibrados para que a troca de direção não aumente o volume além da silhueta real.<br/><br/>Preferência: solução C + correção MTV como salvaguarda."]
+
+DIR --> D4["B4 — Não travar o input<br/><br/>Mesmo quando a mudança de direção não puder ser aplicada imediatamente sem overlap, o personagem deve continuar podendo deslizar ao longo do obstáculo.<br/><br/>Não congelar Scooby apenas porque uma nova orientação encostou no móvel."]
+
+DIR --> D5["B5 — Teste de quinas e laterais<br/><br/>Testar especificamente:<br/>- andar paralelo a uma mesa e virar para cima/baixo;<br/>- andar paralelo à geladeira e virar esquerda/direita;<br/>- contornar vaso, caixa, cadeira e sofá;<br/>- girar rapidamente em 4 direções junto a um obstáculo.<br/><br/>Aceite: nenhuma mudança de direção cria overlap persistente ou softlock."]
+
+%% ============================================================================
+%% C — FASE 1: COZINHA
+%% ============================================================================
+
+F1 --> F1A["C1 — Diminuir a largura do lado ESQUERDO da hitbox da geladeira<br/><br/>Problema observado:<br/>a região de bloqueio da geladeira está larga demais no lado esquerdo, impedindo passagem naquele caminho.<br/><br/>Requisito:<br/>reduzir especificamente a extensão esquerda do colisor da geladeira, preservando a colisão correta da base do eletrodoméstico."]
+
+F1 --> F1B["C2 — Implementação do ajuste da geladeira<br/><br/>Revisar colX e colW da geladeira.<br/><br/>Objetivo:<br/>- liberar o corredor visual existente no lado esquerdo;<br/>- não permitir que Scooby atravesse a geladeira;<br/>- manter o colisor alinhado à base física real do eletrodoméstico;<br/>- não deslocar a sprite visual desnecessariamente."]
+
+F1 --> F1C["C3 — Critério de passagem ao lado da geladeira<br/><br/>Scooby deve conseguir atravessar o caminho ao lado esquerdo da geladeira se houver espaço visual suficiente.<br/><br/>A nova hitbox do Scooby + novo colisor da geladeira devem coexistir sem overlap, sem travamento e sem atravessar o móvel."]
+
+F1 --> F1D["C4 — Colocar a vassoura dentro do balde azul<br/><br/>Problema visual recorrente:<br/>a região vassoura/balde gera cortes e fragmentos de sprite/objeto.<br/><br/>Requisito do usuário:<br/>reposicionar a vassoura visualmente DENTRO do balde azul, de modo a eliminar o problema de sprite cortada e formar um conjunto visual coerente."]
+
+F1 --> F1E["C5 — Preservar o balde azul inteiro<br/><br/>Ao inserir a vassoura no balde:<br/>- o balde deve continuar visível por inteiro;<br/>- a vassoura não deve sofrer corte incorreto;<br/>- nenhuma peça de madeira residual deve reaparecer;<br/>- revisar draw order para o cabo sair de dentro do balde de forma natural."]
+
+F1 --> F1F["C6 — Colisão do conjunto vassoura + balde<br/><br/>Tratar o conjunto como uma base física coerente.<br/><br/>A colisão pode ser:<br/>- um único colisor compacto cobrindo a base do balde;<br/>ou<br/>- colisores separados, desde que não criem frestas/travamentos.<br/><br/>Não criar colisor para o cabo inteiro da vassoura se ele não ocupa o chão."]
+
+%% ============================================================================
+%% D — DEBUG
+%% ============================================================================
+
+DBG --> DBG1["D1 — F1 deve evidenciar interpenetração<br/><br/>Adicionar diagnóstico visual opcional:<br/>se hitboxScooby intersectar obstáculo, destacar a região de overlap em cor distinta ou registrar warning.<br/><br/>Objetivo: detectar imediatamente qualquer caso em que Scooby entra fisicamente em um móvel."]
+
+DBG --> DBG2["D2 — Mostrar hitboxes finais reais<br/><br/>No F1, a geometria desenhada para Scooby e obstáculos deve ser exatamente a mesma usada na colisão.<br/><br/>Evitar caixas de debug desatualizadas ou apenas ilustrativas."]
+
+DBG --> DBG3["D3 — Telemetria útil<br/><br/>Opcionalmente mostrar:<br/>- direção atual;<br/>- quantidade de overlaps detectados;<br/>- posição x/y;<br/>- status COLIDINDO / LIVRE;<br/>- obstáculo responsável pelo bloqueio."]
+
+%% ============================================================================
+%% E — ORDEM
+%% ============================================================================
+
+ORDER --> O1["1 — Corrigir cálculo de hitbox direcional do Scooby"]
+O1 --> O2["2 — Validar nova hitbox ANTES de aplicar mudança de direção"]
+O2 --> O3["3 — Implementar resolução X/Y + correção de penetração residual"]
+O3 --> O4["4 — Revisar todos os pontos onde posição/direção do Scooby é alterada"]
+O4 --> O5["5 — Reduzir colisor esquerdo da geladeira"]
+O5 --> O6["6 — Reposicionar vassoura dentro do balde azul"]
+O6 --> O7["7 — Recalibrar colisão do conjunto balde/vassoura"]
+O7 --> O8["8 — Executar testes de quinas, corredores e mudanças rápidas de direção"]
+O8 --> VALID
+
+%% ============================================================================
+%% F — VALIDAÇÃO
+%% ============================================================================
+
+VALID --> V1["F1 — Invariante crítica de colisão<br/><br/>Após cada update:<br/>para todo obstáculo sólido,<br/>overlap(hitboxScooby, obstaculo) deve ser 0.<br/><br/>Contato de borda é permitido; penetração não."]
+
+VALID --> V2["F2 — Teste de mudança de direção junto a obstáculo<br/><br/>Aceite:<br/>Scooby pode virar encostado em móveis sem a nova hitbox entrar no obstáculo e sem ficar preso."]
+
+VALID --> V3["F3 — Teste de deslizamento<br/><br/>Aceite:<br/>ao pressionar diagonal contra uma parede/móvel, Scooby deve deslizar pelo eixo livre em vez de congelar."]
+
+VALID --> V4["F4 — Teste da geladeira<br/><br/>Aceite:<br/>Scooby consegue passar pelo lado esquerdo da geladeira quando visualmente há corredor, sem atravessar a geladeira e sem ficar preso."]
+
+VALID --> V5["F5 — Teste do balde/vassoura<br/><br/>Aceite:<br/>- vassoura posicionada dentro do balde;<br/>- balde azul inteiro;<br/>- vassoura sem corte indevido;<br/>- sem pedaço de madeira residual;<br/>- colisão compacta e coerente."]
+
+VALID --> V6["F6 — Teste global de obstáculos<br/><br/>Percorrer todos os móveis das quatro fases, contornando cada um nos quatro sentidos e mudando direção junto às bordas.<br/><br/>Aceite: nenhum softlock causado por interpenetração da hitbox."]
+
+VALID --> V7["DEFINIÇÃO DE PRONTO<br/><br/>A implementação só é considerada concluída quando a hitbox do Scooby nunca permanecer dentro de uma hitbox de obstáculo, mudanças de direção próximas a móveis não causarem travamento, o caminho esquerdo da geladeira estiver utilizável e o conjunto balde/vassoura estiver visualmente correto."]
