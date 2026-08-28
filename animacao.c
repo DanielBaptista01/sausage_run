@@ -173,7 +173,12 @@ void desenharAnimacao(const Animacao* a,Direcao direcao,float x,float y)
 bool carregarSprites(Scooby* s,Maria* m)
 {
     if(!s||!m)return false;
-    s->corpo.hitboxLargura=76.0f;s->corpo.hitboxAltura=26.0f;s->corpo.hitboxOffsetX=-13.0f;s->corpo.hitboxOffsetY=-53.0f;
+
+    /* Compatibilidade para rotinas genericas (spawn/path validation). A
+       colisao de gameplay do Scooby usa obterHitboxScooby(), corpo+cabeca. */
+    s->corpo.hitboxLargura=48.0f;s->corpo.hitboxAltura=24.0f;
+    s->corpo.hitboxOffsetX=0.0f;s->corpo.hitboxOffsetY=-31.0f;
+
     if(!carregarAnimacao(&s->idle,"ScoobySprites/idle.png",.20f,.37f,.50f,.90f))return false;
     if(!carregarAnimacao(&s->walk,"ScoobySprites/walk.png",.12f,.37f,.50f,.90f))return false;
     if(!carregarAnimacao(&s->run,"ScoobySprites/run.png",.085f,.37f,.50f,.90f))return false;
