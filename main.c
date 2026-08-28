@@ -87,15 +87,16 @@ int main(void)
     configurarFases(fases);
 
     /*
-     * Hitbox fisica centrada nas patas. O valor anterior (36x18) ficava
-     * artificialmente pequeno no F1 e permitia aproximacao excessiva das
-     * quinas. 46x22 acompanha melhor a base corporal sem usar a sprite toda.
+     * Retangulo preto da referencia: ~62x30 px sobre o tronco, com centro
+     * aproximadamente 6 px a esquerda e 61 px acima do ponto logico atual.
+     * carregarSprites() reaplica estes mesmos valores como salvaguarda para
+     * que a calibracao fisica e a calibracao das sheets permaneçam juntas.
      */
     scooby.corpo.velocidade=135;
-    scooby.corpo.hitboxLargura=46;
-    scooby.corpo.hitboxAltura=22;
-    scooby.corpo.hitboxOffsetX=0;
-    scooby.corpo.hitboxOffsetY=-8;
+    scooby.corpo.hitboxLargura=62;
+    scooby.corpo.hitboxAltura=30;
+    scooby.corpo.hitboxOffsetX=-6;
+    scooby.corpo.hitboxOffsetY=-61;
     scooby.direcaoSprite=DIRECAO_UP;
 
     maria.corpo.velocidade=96;maria.corpo.hitboxLargura=28;maria.corpo.hitboxAltura=20;maria.corpo.hitboxOffsetX=0;maria.corpo.hitboxOffsetY=-10;maria.direcaoSprite=DIRECAO_LEFT;
