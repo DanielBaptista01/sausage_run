@@ -1,0 +1,78 @@
+flowchart TD
+
+ROOT["SAUSAGE RUN — ADENDO TÉCNICO DE CORREÇÕES<br/><br/>Escopo desta especificação:<br/>1. Fase 4 deve usar corretamente os sprites de quarto_objetos.png.<br/>2. Corrigir corte superior das sprites do Scooby carregando a bolinha ao olhar/mover para a direita.<br/>3. Corrigir limite inferior de movimentação para impedir personagens de subirem sobre a borda de madeira em TODOS os mapas.<br/><br/>Arquivos prováveis envolvidos:<br/>recursos.c · fase.c · render.c · util.c · jogo.h · scooby.c"]
+
+ROOT --> Q["A — FASE 4 / quarto_objetos.png"]
+ROOT --> C["B — SCOOBY COM BOLINHA / DIREÇÃO DIREITA"]
+ROOT --> L["C — LIMITE INFERIOR DOS MAPAS"]
+ROOT --> R["D — TESTES DE REGRESSÃO"]
+ROOT --> O["E — ORDEM DE IMPLEMENTAÇÃO"]
+
+Q --> Q1["A1 — BUG: Fase 4 não está renderizando os sprites reais de quarto_objetos.png<br/><br/>Sintoma observado:<br/>os móveis do quarto aparecem como formas simplificadas/desenhadas artificialmente, diferentes da arte das demais fases.<br/><br/>Comportamento esperado:<br/>a fase 4 deve utilizar os objetos reais contidos em mapa/quarto_objetos.png."]
+
+Q --> Q2["A2 — Verificar cadeia real de carregamento em recursos.c<br/><br/>A IA deve investigar, nesta ordem:<br/>1. se mapa/quarto_objetos.png existe;<br/>2. se carregarBitmapFlexivel consegue abri-lo;<br/>3. se r->folhasObjetos[3] recebe esse bitmap;<br/>4. se algum fallback runtime/base64 está substituindo indevidamente o PNG válido;<br/>5. se fase.c realmente usa recursos->folhasObjetos[3]."]
+
+Q --> Q3["A3 — Prioridade obrigatória de asset<br/><br/>Regra:<br/>Se mapa/quarto_objetos.png existir e puder ser decodificado, ele deve ser SEMPRE a fonte primária da fase 4.<br/><br/>Fallback embutido/base64 só pode ser usado quando o PNG real estiver ausente ou inválido.<br/>Nunca substituir silenciosamente um PNG válido por uma versão simplificada."]
+
+Q --> Q4["A4 — Validar dimensões da folha de objetos<br/><br/>Após carregar quarto_objetos.png:<br/>- obter largura/altura reais;<br/>- validar todos os source rectangles sx,sy,sw,sh usados pela fase 4;<br/>- garantir que nenhum source rectangle ultrapasse os limites do bitmap;<br/>- imprimir erro detalhado em debug se houver crop inválido."]
+
+Q --> Q5["A5 — Reconfigurar objetos do quarto em fase.c<br/><br/>Os valores atuais de sx,sy,sw,sh, mapaX,mapaY e escala devem ser conferidos contra quarto_objetos.png real.<br/><br/>Não reutilizar coordenadas criadas para o fallback simplificado se elas não correspondem ao PNG definitivo."]
+
+Q --> Q6["A6 — Escala dos móveis da fase 4<br/><br/>Evitar fatores extremos de ampliação.<br/>Cada objeto deve ser dimensionado para ficar visualmente compatível com Cozinha, Sala e Banheiro.<br/><br/>Critério:<br/>sem pixelização excessiva, sem móveis gigantes e sem proporções incoerentes."]
+
+Q --> Q7["A7 — Depois de corrigir os sprites, refazer colisões da fase 4<br/><br/>Como posição/escala visual pode mudar, recalcular:<br/>- colX/colY/colW/colH;<br/>- obstáculos;<br/>- depthY/baseY;<br/>- waypoints;<br/>- spawns da bola;<br/>- spawn Scooby/Maria;<br/>- trigger de saída."]
+
+Q --> Q8["A8 — Critério de aceite da Fase 4<br/><br/>A fase deve mostrar os móveis/objetos reais de quarto_objetos.png, com qualidade visual equivalente às outras fases.<br/>Não aceitar formas geométricas simplificadas como resultado final quando o PNG real estiver disponível."]
+
+C --> C1["B1 — BUG: sprite do Scooby com bolinha olhando/movendo para a direita perde a parte superior do personagem<br/><br/>Sintoma observado:<br/>ao carregar a bolinha, frames da direção direita aparecem cortados na região superior."]
+
+C --> C2["B2 — Diferenciar dois tipos de erro possíveis<br/><br/>A IA deve determinar se o corte é causado por:<br/>A. source rectangle incorreto da sheet carry;<br/>B. offset/anchor de renderização incorreto;<br/>C. frameW/frameH menor que a célula real;<br/>D. linha DIRECAO_RIGHT mapeada para sy incorreto;<br/>E. clipping causado pelo destino/render."]
+
+C --> C3["B3 — Validar individualmente as 5 sheets de carry<br/><br/>Arquivos:<br/>yellow_dog.png<br/>green_dog.png<br/>purple_dog.png<br/>blue_dog.png<br/>red_dog.png<br/><br/>Para cada uma, medir:<br/>- largura do bitmap;<br/>- altura do bitmap;<br/>- quantidade de frames;<br/>- altura de cada direção;<br/>- margens/padding."]
+
+C --> C4["B4 — Não usar uma configuração incorreta única para todas as animações<br/><br/>Se carry possuir dimensões diferentes de idle/walk/run, armazenar frameW/frameH específicos na Animacao.<br/><br/>Não forçar FRAME_SPRITE global caso isso cause corte."]
+
+C --> C5["B5 — Validar mapeamento de DIRECAO_RIGHT<br/><br/>Confirmar qual linha da sprite sheet representa direita.<br/>Não assumir que enum * frameH corresponde automaticamente à ordem real da imagem."]
+
+C --> C6["B6 — Validar source rectangle antes do desenho<br/><br/>Para cada frame da direção direita:<br/>sx >= 0<br/>sy >= 0<br/>sx + frameW <= bitmapWidth<br/>sy + frameH <= bitmapHeight<br/><br/>Nenhuma região deve ser truncada pelo bitmap."]
+
+C --> C7["B7 — Corrigir anchor sem mascarar crop<br/><br/>Primeiro corrigir o source rectangle.<br/>Depois ajustar anchorNormY/offsetY se a imagem inteira estiver sendo deslocada de forma que o topo pareça cortado.<br/><br/>Não aumentar artificialmente o destino para esconder source crop inválido."]
+
+C --> C8["B8 — Matriz de teste obrigatória para carry<br/><br/>Testar 5 cores × 4 direções × idle/movimento aplicável.<br/><br/>Aceite:<br/>- cabeça/orelhas/parte superior completas;<br/>- nenhuma sprite vizinha;<br/>- nenhuma parte cortada;<br/>- bola corretamente posicionada na boca."]
+
+L --> L1["C1 — BUG GLOBAL: Scooby consegue subir sobre a borda de madeira inferior<br/><br/>Problema:<br/>o limite lógico de movimento permite que a hitbox/anchor alcance uma região que visualmente pertence à moldura/parede de madeira."]
+
+L --> L2["C2 — Regra global<br/><br/>Em TODAS as fases, o ponto de contato dos pés/patas deve permanecer dentro do piso.<br/>A borda inferior de madeira não é área caminhável."]
+
+L --> L3["C3 — Corrigir limitarAoMapa em util.c<br/><br/>Não usar simplesmente ALTURA_TELA - altura/2 - 8 se isso inclui a moldura de madeira.<br/><br/>Definir um limite de piso real, por exemplo por fase:<br/>fase->limiteInferiorPiso<br/>ou através de obstáculos perimetrais.<br/><br/>O limite deve coincidir com a linha visual onde termina o piso e começa a madeira."]
+
+L --> L4["C4 — Solução recomendada: paredes/perímetros por fase<br/><br/>Preferir obstáculos físicos nas bordas reais do piso.<br/>Assim o mesmo sistema impede:<br/>- subir na borda inferior;<br/>- entrar em paredes laterais;<br/>- invadir moldura superior;<br/>- acessar regiões externas."]
+
+L --> L5["C5 — Não limitar usando o topo da sprite<br/><br/>A validação deve usar a HITBOX/anchor dos pés.<br/>A parte visual do corpo pode sobrepor elementos de profundidade quando apropriado, mas os pés nunca podem entrar na moldura de madeira."]
+
+L --> L6["C6 — Ajustar trigger de saída separadamente<br/><br/>Se existe porta/escada aberta na borda inferior, somente a área específica do trigger deve permitir avanço de transição.<br/><br/>Não abrir toda a borda inferior para permitir a saída."]
+
+L --> L7["C7 — Durante transição pela porta/escada<br/><br/>Movimento automático pode ultrapassar temporariamente o limite normal somente dentro do estado JOGO_TRANSICAO_FASE e somente pela abertura definida.<br/><br/>Durante gameplay normal, a borda continua bloqueada."]
+
+L --> L8["C8 — Aplicar às quatro fases<br/><br/>COZINHA<br/>SALA<br/>BANHEIRO<br/>QUARTO<br/><br/>Revisar visualmente a linha de piso inferior de cada mapa e configurar o limite correspondente."]
+
+L --> L9["C9 — Critério de aceite<br/><br/>Com gameplay normal, pressionar S contra toda a borda inferior de cada mapa.<br/>Scooby e Maria nunca devem subir na madeira.<br/><br/>A única exceção é a animação controlada de transição através de uma saída real."]
+
+R --> R1["D1 — Regressão Fase 4<br/><br/>- quarto_objetos.png carregado;<br/>- objetos reais renderizados;<br/>- colisões correspondentes aos objetos reais;<br/>- saída continua funcional;<br/>- bola permanece alcançável."]
+
+R --> R2["D2 — Regressão carry<br/><br/>Testar todas as 5 cores em todas as direções, principalmente DIRECAO_RIGHT.<br/>Registrar falha se qualquer pixel do topo desaparecer."]
+
+R --> R3["D3 — Regressão das bordas<br/><br/>Percorrer borda inferior completa de todas as fases.<br/>Testar Scooby andando e correndo.<br/>Testar Maria em patrulha/perseguição."]
+
+R --> R4["D4 — Regressão das saídas<br/><br/>Sem bola: abertura não conclui fase.<br/>Com bola: somente trigger correto inicia transição.<br/>Fora do estado de transição, não permitir atravessar madeira."]
+
+R --> R5["D5 — Definição de pronto<br/><br/>Não considerar concluído se:<br/>- quarto ainda usar formas simplificadas;<br/>- carry direita ainda cortar a cabeça/topo;<br/>- qualquer personagem conseguir ocupar a borda inferior de madeira em gameplay normal."]
+
+O --> O1["1 — Corrigir prioridade/carregamento de quarto_objetos.png em recursos.c"]
+O1 --> O2["2 — Conferir crops e escalas da fase 4 em fase.c"]
+O2 --> O3["3 — Refazer colisões/depth/spawns/waypoints do quarto"]
+O3 --> O4["4 — Corrigir metadados frameW/frameH das animações carry"]
+O4 --> O5["5 — Corrigir DIRECAO_RIGHT e anchor do carry"]
+O5 --> O6["6 — Criar/revisar limites inferiores físicos das quatro fases"]
+O6 --> O7["7 — Preservar abertura somente nos triggers de transição"]
+O7 --> O8["8 — Executar D1–D5"]
