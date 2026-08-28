@@ -1,5 +1,9 @@
 #include "jogo.h"
 
+static const float ALTURA_HITBOX_VERDE_SCOOBY=28.0f;
+static const float ESPESSURA_PAREDE_DEBUG=12.0f;
+static const float EXPANSAO_COLISOR=2.0f;
+
 static float clamp01(float v){return v<0?0:v>1?1:v;}
 
 static void objeto(Fase* f,int sx,int sy,int sw,int sh,
@@ -39,6 +43,28 @@ static void obstaculo(Fase* f,float x,float y,float w,float h,bool visao,bool pa
 static Retangulo areaFonte(float x,float y,float w,float h)
 {
     return (Retangulo){mapaParaTelaX(x),mapaParaTelaY(y),w*MAPA_ESCALA,h*MAPA_ESCALA};
+}
+
+/*
+ * Ajusta apenas o limite SUPERIOR e preserva exatamente o limite inferior.
+ * topoBaseMapa e o Y, em coordenadas do atlas/mapa, onde comeca o bloqueio
+ * fisico dos moveis superiores. O corredor livre real fica entre:
+ *   fim da parede perimetral e inicio do colisor expandido do movel.
+ *
+ * A formula inclui os 2 px adicionados por reconstruirColisoesFase(), logo a
+ * faixa resultante tem aproximadamente 28 px: a maior altura da hitbox verde
+ * do Scooby (UP/DOWN). Assim todas as orientacoes cabem sem abrir um vao amplo.
+ */
+static void calibrarFaixaSuperior(Fase* f,float topoBaseMapa)
+{
+    if(!f)return;
+    float fundo=f->areaJogavel.y+f->areaJogavel.altura;
+    float topoColisor=mapaParaTelaY(topoBaseMapa)-EXPANSAO_COLISOR;
+    float novoTopo=topoColisor-ESPESSURA_PAREDE_DEBUG-ALTURA_HITBOX_VERDE_SCOOBY;
+    if(novoTopo<0)novoTopo=0;
+    if(novoTopo>=fundo)return;
+    f->areaJogavel.y=novoTopo;
+    f->areaJogavel.altura=fundo-novoTopo;
 }
 
 static void waypoint(Fase* f,float x,float y)
@@ -125,18 +151,12 @@ static void cozinha(Fase* f)
     objeto(f,838,396,160,385,790,425,.94,.04,.45,.92,.53,true,true,true,2,5);
     objeto(f,451,615,192,243,110,710,.84,.04,.52,.92,.46,true,true,true,2,6);
 
-    /*
-     * Regiao balde/vassoura revisada a partir da imagem marcada:
-     * - o balde volta ao crop completo (88 px), evitando corte lateral;
-     * - os 24 px iniciais do antigo crop da vassoura eram uma barra de
-     *   madeira pertencente a outra celula do atlas;
-     * - removemos apenas essa faixa e compensamos mapaX em +22 unidades,
-     *   mantendo a parte vermelha da vassoura exatamente na mesma posicao e
-     *   na mesma escala visual aprovada anteriormente.
-     */
     objeto(f,700,708,88,124,960,730,.88,.10,.48,.80,.48,true,false,false,2,7);
     objeto(f,999,667,82,203,1072,690,.90,.17,.72,.66,.25,false,false,false,0,8);
     objeto(f,240,817,177,241,1200,750,.78,.15,.68,.70,.30,true,false,false,2,9);
+
+    /* Fogao/base superior comeca aproximadamente em y=275. */
+    calibrarFaixaSuperior(f,275.0f);
 
     f->spawnScooby=(Ponto){mapaParaTelaX(705),mapaParaTelaY(840)};f->spawnMaria=(Ponto){mapaParaTelaX(1015),mapaParaTelaY(550)};
     waypoint(f,560,450);waypoint(f,760,450);waypoint(f,1050,500);waypoint(f,1100,720);waypoint(f,750,800);waypoint(f,430,820);
@@ -151,20 +171,30 @@ static void sala(Fase* f)
 
     objeto(f,52,19,188,494,90,285,.84,.05,.58,.90,.40,true,true,true,2,0);
     objeto(f,353,66,277,245,300,145,.93,.04,.55,.92,.43,true,true,true,2,1);
+
+    /* Estacao gamer: visual livre para depth, mesa e cadeira com bases
+       independentes. A mesa passa a bloquear apenas a base frontal, iniciando
+       no mesmo Y dos demais moveis superiores; fica um corredor real atras. */
     objeto(f,723,71,451,397,690,120,.82,.04,.55,.92,.43,false,false,true,2,2);
-    colisorSomente(f,690,180,368,184,true);
+    colisorSomente(f,690,270,368,94,true);
     colisorSomente(f,812,355,125,74,true);
-    objeto(f,1213,23,202,363,1160,140,.90,.05,.57,.90,.41,true,true,true,2,3);
+
+    /* A estante alta agora inicia sua base fisica em y~270, evitando um vao
+       superior desproporcional e mantendo a mesma profundidade final. */
+    objeto(f,1213,23,202,363,1160,140,.90,.05,.40,.90,.58,true,true,true,2,3);
     objeto(f,258,469,372,213,410,450,1.00,.04,.45,.92,.53,true,true,true,2,4);
     objeto(f,695,500,244,184,500,690,.88,.04,.45,.92,.53,true,false,true,2,5);
     objeto(f,960,545,135,130,185,770,.82,.12,.54,.76,.43,true,false,false,2,6);
     objeto(f,1112,461,154,213,980,525,.90,.08,.50,.84,.48,true,true,true,2,7);
     objeto(f,1291,500,122,163,1165,575,.84,.10,.50,.80,.48,true,false,false,2,8);
 
-    objeto(f,485,689,256,386,720,735,.60,.20,.72,.60,.25,false,false,false,2,9);
-    /* Caixas pretas autoritativas: base da caixa e somente o pote do vaso. */
+    /* Vaso inferior: deslocado 14 unidades de mapa (~9 px na tela). O crop e
+       a escala nao mudam; somente a posicao visual e a base fisica acompanham. */
+    objeto(f,485,689,256,386,720,749,.60,.20,.72,.60,.25,false,false,false,2,9);
     colisorSomente(f,728,805,124,58,false);
-    colisorSomente(f,800,914,54,44,false);
+    colisorSomente(f,800,928,54,44,false);
+
+    calibrarFaixaSuperior(f,270.0f);
 
     f->spawnScooby=(Ponto){mapaParaTelaX(410),mapaParaTelaY(780)};f->spawnMaria=(Ponto){mapaParaTelaX(800),mapaParaTelaY(500)};
     waypoint(f,470,410);waypoint(f,650,470);waypoint(f,900,470);waypoint(f,1010,610);waypoint(f,900,760);waypoint(f,430,700);
@@ -188,6 +218,9 @@ static void banheiro(Fase* f)
     objeto(f,805,551,133,154,900,770,.78,.08,.38,.84,.60,true,false,false,2,8);
     objeto(f,1000,567,192,160,1035,775,.76,.05,.38,.90,.60,true,false,false,2,9);
 
+    /* A base do vaso/armario superior direito inicia em y~310. */
+    calibrarFaixaSuperior(f,310.0f);
+
     f->spawnScooby=(Ponto){mapaParaTelaX(460),mapaParaTelaY(820)};f->spawnMaria=(Ponto){mapaParaTelaX(835),mapaParaTelaY(540)};
     waypoint(f,500,415);waypoint(f,750,415);waypoint(f,950,415);waypoint(f,1000,650);waypoint(f,850,700);waypoint(f,500,720);
     spawnBola(f,850,650);spawnBola(f,540,750);spawnBola(f,770,470);spawnBola(f,980,650);
@@ -199,36 +232,32 @@ static void quarto(Fase* f)
     f->areaJogavel=areaFonte(82,150,1280,825);
     f->triggerSaida=areaFonte(1040,875,210,90);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1145),mapaParaTelaY(965)};
 
-    /* Moveis superiores recuados; a base fica a frente do corredor de fundo. */
-    objeto(f, 0, 1,32,28, 105,115,11.3f,.04,.52,.92,.45,true,true,true,0,0);
-    objeto(f,33, 7,20,20, 545,120,10.6f,.06,.64,.88,.34,true,true,true,0,1);
-    objeto(f,55, 1,18,26, 910,110,10.8f,.06,.53,.88,.44,true,true,true,0,2);
+    objeto(f,0,1,32,28,105,115,11.3f,.04,.52,.92,.45,true,true,true,0,0);
+    objeto(f,33,7,20,20,545,120,10.6f,.06,.71,.88,.27,true,true,true,0,1);
+    objeto(f,55,1,18,26,910,110,10.8f,.06,.57,.88,.41,true,true,true,0,2);
 
-    /* Espelho mais a esquerda e com base fisica apoiada no piso. */
-    objeto(f,75, 6,10,20,900,300,10.8f,.10,.55,.80,.40,true,true,true,0,3);
-    objeto(f,87, 9,11,18,1180,455,9.8f,.25,.60,.50,.32,true,true,true,0,4);
+    objeto(f,75,6,10,20,900,300,10.8f,.10,.55,.80,.40,true,true,true,0,3);
+    objeto(f,87,9,11,18,1180,455,9.8f,.25,.60,.50,.32,true,true,true,0,4);
 
-    /* Barreira central segue a grande marcacao preta, mas deixa rotas pelos
-       lados e pela parte inferior. */
     objeto(f,34,28,23,20,505,410,8.0f,.02,.10,.96,.86,false,false,true,0,6);
     objeto(f,34,28,23,20,690,410,8.0f,.02,.10,.96,.86,false,false,true,0,11);
-    objeto(f, 2,29,29,20,865,455,7.6f,.02,.10,.96,.86,false,false,true,0,5);
+    objeto(f,2,29,29,20,865,455,7.6f,.02,.10,.96,.86,false,false,true,0,5);
     colisorSomente(f,505,410,360,145,true);
     colisorSomente(f,865,455,220,110,true);
 
-    /* Enriquecimento do quarto: objetos adicionais formam desvios, cobertura
-       e corredores sem fechar a rota para Scooby/Maria. */
     objeto(f,34,28,23,20,120,555,8.6f,.05,.46,.90,.50,true,true,true,0,12);
     objeto(f,60,32,20,16,300,455,7.4f,.08,.42,.84,.54,true,false,true,0,13);
     objeto(f,82,30,17,17,1030,545,7.2f,.10,.42,.80,.54,true,false,false,0,14);
-    objeto(f,44,52, 7, 9,610,690,8.2f,.08,.35,.84,.60,true,false,false,0,15);
+    objeto(f,44,52,7,9,610,690,8.2f,.08,.35,.84,.60,true,false,false,0,15);
     objeto(f,60,32,20,16,900,650,9.2f,.06,.38,.88,.58,true,true,true,0,7);
     objeto(f,82,30,17,17,1110,650,9.2f,.08,.35,.84,.60,true,false,false,0,8);
-    objeto(f, 3,50,13,10,300,760,9.4f,.08,.34,.84,.60,true,false,false,0,9);
-    objeto(f,44,52, 7, 9,720,790,9.0f,.08,.35,.84,.60,true,false,false,0,10);
+    objeto(f,3,50,13,10,300,760,9.4f,.08,.34,.84,.60,true,false,false,0,9);
+    objeto(f,44,52,7,9,720,790,9.0f,.08,.35,.84,.60,true,false,false,0,10);
+
+    calibrarFaixaSuperior(f,270.0f);
 
     f->spawnScooby=(Ponto){mapaParaTelaX(450),mapaParaTelaY(720)};f->spawnMaria=(Ponto){mapaParaTelaX(1160),mapaParaTelaY(610)};
-    waypoint(f,300,205);waypoint(f,680,205);waypoint(f,1040,205);waypoint(f,1180,370);
+    waypoint(f,300,250);waypoint(f,680,250);waypoint(f,1040,250);waypoint(f,1180,370);
     waypoint(f,1080,780);waypoint(f,780,830);waypoint(f,430,820);waypoint(f,250,620);waypoint(f,420,350);
     spawnBola(f,850,340);spawnBola(f,1200,520);spawnBola(f,760,700);spawnBola(f,220,680);
 }
