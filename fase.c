@@ -10,8 +10,7 @@ static void objeto(Fase* f, int sx,int sy,int sw,int sh,
     if(!f||f->quantidadeObjetos>=MAX_OBJETOS)return;
     ObjetoMapa* o=&f->objetos[f->quantidadeObjetos++];
     memset(o,0,sizeof(*o));
-    o->tipoVisual=(f->tipoSaida==SAIDA_ESCADA && f->caminhoObjetos && strcmp(f->caminhoObjetos,"mapa/quarto_objetos.png")==0)
-                  ? OBJ_PROCEDURAL_QUARTO:OBJ_SPRITE;
+    o->tipoVisual=OBJ_SPRITE;
     o->sx=sx;o->sy=sy;o->sw=sw;o->sh=sh;o->insetFonte=inset;o->visualId=visualId;
     o->mapaX=x;o->mapaY=y;o->escala=escala;
     o->baseX=clamp01(bx);o->baseY=clamp01(by);o->baseW=clamp01(bw);o->baseH=clamp01(bh);
@@ -34,12 +33,14 @@ static Retangulo areaFonte(float x,float y,float w,float h)
 
 static void waypoint(Fase* f,float x,float y)
 {
-    if(f->quantidadeWaypoints<MAX_WAYPOINTS)f->waypoints[f->quantidadeWaypoints++]=(Ponto){mapaParaTelaX(x),mapaParaTelaY(y)};
+    if(f->quantidadeWaypoints<MAX_WAYPOINTS)
+        f->waypoints[f->quantidadeWaypoints++]=(Ponto){mapaParaTelaX(x),mapaParaTelaY(y)};
 }
 
 static void spawnBola(Fase* f,float x,float y)
 {
-    if(f->quantidadeSpawnsBola<MAX_SPAWNS_BOLA)f->spawnsBola[f->quantidadeSpawnsBola++]=(Ponto){mapaParaTelaX(x),mapaParaTelaY(y)};
+    if(f->quantidadeSpawnsBola<MAX_SPAWNS_BOLA)
+        f->spawnsBola[f->quantidadeSpawnsBola++]=(Ponto){mapaParaTelaX(x),mapaParaTelaY(y)};
 }
 
 static Retangulo baseObjeto(const ObjetoMapa* o)
@@ -52,24 +53,20 @@ static Retangulo baseObjeto(const ObjetoMapa* o)
 static void paredesPerimetro(Fase* f)
 {
     Retangulo a=f->areaJogavel;
-    const float e=10.0f;
+    const float e=12.0f;
 
-    /*
-     * O retangulo areaJogavel representa SOMENTE piso. A borda superior
-     * deve portanto bloquear completamente a entrada em textura de parede.
-     */
     obstaculo(f,a.x,a.y,a.largura,e,true,true);
     obstaculo(f,a.x,a.y,e,a.altura,true,true);
     obstaculo(f,a.x+a.largura-e,a.y,e,a.altura,true,true);
 
-    float gapL=f->triggerSaida.x-8.0f;
-    float gapR=f->triggerSaida.x+f->triggerSaida.largura+8.0f;
-    float leftW=gapL-a.x;
-    float rightX=gapR;
-    float rightW=a.x+a.largura-rightX;
-
-    if(leftW>0)obstaculo(f,a.x,a.y+a.altura-e,leftW,e,true,true);
-    if(rightW>0)obstaculo(f,rightX,a.y+a.altura-e,rightW,e,true,true);
+    /*
+     * A borda inferior permanece SEMPRE solida durante gameplay normal.
+     * O trigger de saida fica sobre a regiao de piso anterior a abertura;
+     * ele inicia a transicao, mas nao transforma a madeira em area livre.
+     * A travessia visual da abertura e tratada exclusivamente pelo estado
+     * JOGO_TRANSICAO_FASE em scooby.c.
+     */
+    obstaculo(f,a.x,a.y+a.altura-e,a.largura,e,true,true);
 }
 
 void reconstruirColisoesFase(Fase* f)
@@ -81,7 +78,6 @@ void reconstruirColisoesFase(Fase* f)
     {
         ObjetoMapa* o=&f->objetos[i];
         if(!o->bloqueiaMovimento)continue;
-
         Retangulo b=baseObjeto(o);
         obstaculo(f,b.x-2,b.y-2,b.largura+4,b.altura+4,o->bloqueiaVisao,false);
     }
@@ -122,11 +118,15 @@ bool validarObjetosFase(const Fase* f)
     for(int i=0;i<f->quantidadeObjetos;i++)
     {
         const ObjetoMapa* o=&f->objetos[i];
+        int sx=o->sx+o->insetFonte;
+        int sy=o->sy+o->insetFonte;
+        int sw=o->sw-o->insetFonte*2;
+        int sh=o->sh-o->insetFonte*2;
 
-        if(o->sx<0||o->sy<0||o->sw<=0||o->sh<=0||o->sx+o->sw>w||o->sy+o->sh>h)
+        if(sw<=0||sh<=0||sx<0||sy<0||sx+sw>w||sy+sh>h)
         {
             printf("ERRO %s objeto %d crop [%d,%d,%d,%d] folha=%dx%d\n",
-                   f->nome,i,o->sx,o->sy,o->sw,o->sh,w,h);
+                   f->nome,i,sx,sy,sw,sh,w,h);
             ok=false;
         }
     }
@@ -137,8 +137,9 @@ bool validarObjetosFase(const Fase* f)
 static void cozinha(Fase* f)
 {
     f->nome="Cozinha";f->caminhoFundo="mapa/cozinha.png";f->caminhoObjetos="mapa/cozinha_objetos.png";f->tipoSaida=SAIDA_ESCADA;
-    f->areaJogavel=areaFonte(82,125,1284,900);
-    f->triggerSaida=areaFonte(500,915,155,100);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(578),mapaParaTelaY(995)};
+    /* piso termina antes da moldura inferior de madeira */
+    f->areaJogavel=areaFonte(82,125,1284,850);
+    f->triggerSaida=areaFonte(500,895,155,70);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(578),mapaParaTelaY(965)};
 
     objeto(f,25,19,243,354,100,145,1.00,.05,.60,.90,.38,true,true,true,2,0);
     objeto(f,326,71,486,269,360,145,1.00,.01,.53,.98,.46,true,true,true,2,1);
@@ -151,17 +152,17 @@ static void cozinha(Fase* f)
     objeto(f,1000,667,81,203,1050,690,.90,.17,.72,.66,.25,false,false,false,1,8);
     objeto(f,240,817,177,241,1200,750,.78,.15,.68,.70,.30,true,false,false,2,9);
 
-    f->spawnScooby=(Ponto){mapaParaTelaX(705),mapaParaTelaY(850)};
+    f->spawnScooby=(Ponto){mapaParaTelaX(705),mapaParaTelaY(840)};
     f->spawnMaria=(Ponto){mapaParaTelaX(1015),mapaParaTelaY(550)};
-    waypoint(f,600,450);waypoint(f,800,450);waypoint(f,1050,500);waypoint(f,1100,720);waypoint(f,750,800);waypoint(f,450,820);
-    spawnBola(f,400,450);spawnBola(f,650,500);spawnBola(f,1150,600);spawnBola(f,850,850);
+    waypoint(f,600,450);waypoint(f,800,450);waypoint(f,1050,500);waypoint(f,1100,720);waypoint(f,750,800);waypoint(f,450,800);
+    spawnBola(f,400,450);spawnBola(f,650,500);spawnBola(f,1150,600);spawnBola(f,850,820);
 }
 
 static void sala(Fase* f)
 {
     f->nome="Sala";f->caminhoFundo="mapa/sala.png";f->caminhoObjetos="mapa/sala_objetos.png";f->tipoSaida=SAIDA_ESCADA;
-    f->areaJogavel=areaFonte(72,125,1290,900);
-    f->triggerSaida=areaFonte(1135,890,155,120);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1210),mapaParaTelaY(990)};
+    f->areaJogavel=areaFonte(72,125,1290,850);
+    f->triggerSaida=areaFonte(1135,875,155,90);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1210),mapaParaTelaY(965)};
 
     objeto(f,52,19,188,494,90,285,.84,.05,.58,.90,.40,true,true,true,2,0);
     objeto(f,353,66,277,245,300,145,.93,.04,.55,.92,.43,true,true,true,2,1);
@@ -177,33 +178,16 @@ static void sala(Fase* f)
     f->spawnScooby=(Ponto){mapaParaTelaX(420),mapaParaTelaY(770)};
     f->spawnMaria=(Ponto){mapaParaTelaX(800),mapaParaTelaY(500)};
     waypoint(f,500,420);waypoint(f,650,500);waypoint(f,900,500);waypoint(f,900,650);waypoint(f,750,780);waypoint(f,400,700);
-    spawnBola(f,250,350);spawnBola(f,600,400);spawnBola(f,1200,550);spawnBola(f,950,750);
+    spawnBola(f,250,350);spawnBola(f,600,400);spawnBola(f,1200,550);spawnBola(f,950,760);
 }
 
 static void banheiro(Fase* f)
 {
-    f->nome="Banheiro";
-    f->caminhoFundo="mapa/banheiro.png";
-    f->caminhoObjetos="mapa/banheiro_objetos.png";
-    f->tipoSaida=SAIDA_PORTA;
+    f->nome="Banheiro";f->caminhoFundo="mapa/banheiro.png";f->caminhoObjetos="mapa/banheiro_objetos.png";f->tipoSaida=SAIDA_PORTA;
+    f->areaJogavel=areaFonte(78,320,1285,655);
+    f->triggerSaida=areaFonte(585,880,280,85);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(725),mapaParaTelaY(965)};
 
-    /*
-     * No mapa do banheiro, y≈125 ainda e a FAIXA AZUL DA PAREDE.
-     * O piso inicia apenas depois do rodape horizontal, aproximadamente
-     * em y=320 da imagem-fonte. A area caminhavel agora comeca no piso.
-     * Isso impede Scooby/Maria de subir pela textura da parede e chegar ao
-     * topo do box/janela, bug confirmado no F1 enviado pelo usuario.
-     */
-    f->areaJogavel=areaFonte(78,320,1285,705);
-
-    /* A saida permanece na abertura inferior real. */
-    f->triggerSaida=areaFonte(585,905,280,105);
-    f->alvoEntradaSaida=(Ponto){mapaParaTelaX(725),mapaParaTelaY(990)};
-
-    /* Box: praticamente toda a projecao e solida; nenhuma entrada interna. */
     objeto(f,42,19,437,478,65,130,.88,.02,.06,.96,.91,true,true,false,2,0);
-
-    /* Vaso, estante, prateleira/cestos e pia: base fisica completa. */
     objeto(f,539,92,167,359,1000,145,.92,.05,.50,.90,.48,true,true,true,2,1);
     objeto(f,809,36,174,431,590,300,.90,.04,.48,.92,.50,true,true,true,2,2);
     objeto(f,1063,58,279,193,1085,105,.84,.04,.48,.92,.50,true,true,true,2,3);
@@ -216,43 +200,43 @@ static void banheiro(Fase* f)
 
     f->spawnScooby=(Ponto){mapaParaTelaX(460),mapaParaTelaY(820)};
     f->spawnMaria=(Ponto){mapaParaTelaX(835),mapaParaTelaY(540)};
-
-    waypoint(f,500,450);waypoint(f,750,450);waypoint(f,950,450);
-    waypoint(f,1000,650);waypoint(f,850,700);waypoint(f,500,720);
-
-    spawnBola(f,850,650);spawnBola(f,560,780);
-    spawnBola(f,780,560);spawnBola(f,980,650);
+    waypoint(f,500,450);waypoint(f,750,450);waypoint(f,950,450);waypoint(f,1000,650);waypoint(f,850,700);waypoint(f,500,720);
+    spawnBola(f,850,650);spawnBola(f,560,780);spawnBola(f,780,560);spawnBola(f,980,650);
 }
 
 static void quarto(Fase* f)
 {
     f->nome="Quarto";f->caminhoFundo="mapa/quarto.png";f->caminhoObjetos="mapa/quarto_objetos.png";f->tipoSaida=SAIDA_ESCADA;
-    f->areaJogavel=areaFonte(82,130,1280,895);
-    f->triggerSaida=areaFonte(1040,890,210,120);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1145),mapaParaTelaY(990)};
+    f->areaJogavel=areaFonte(82,130,1280,845);
+    f->triggerSaida=areaFonte(1040,875,210,90);f->alvoEntradaSaida=(Ponto){mapaParaTelaX(1145),mapaParaTelaY(965)};
 
-    /* Estes crops correspondem EXCLUSIVAMENTE ao atlas HD interno. */
-    objeto(f,20,20,300,210,115,165,1.05,.04,.48,.92,.50,true,true,true,0,0);
-    objeto(f,350,20,200,210,560,165,.92,.06,.48,.88,.50,true,true,true,0,1);
-    objeto(f,580,20,180,230,935,145,.94,.05,.53,.90,.45,true,true,true,0,2);
-    objeto(f,800,25,120,220,1200,160,.85,.08,.60,.84,.38,true,true,true,0,3);
-    objeto(f,20,275,220,180,120,565,.88,.05,.45,.90,.53,true,true,true,0,4);
-    objeto(f,270,280,220,170,455,575,.86,.05,.44,.90,.54,true,true,true,0,5);
-    objeto(f,525,300,220,145,785,590,.86,.05,.42,.90,.56,true,false,true,0,6);
-    objeto(f,790,300,150,145,1120,600,.82,.10,.48,.80,.50,true,false,false,0,7);
-    objeto(f,25,505,180,145,260,790,.82,.06,.42,.88,.56,true,false,true,0,8);
-    objeto(f,240,510,280,135,570,760,.85,.00,.72,1.00,.25,false,false,false,0,9);
-    objeto(f,560,510,145,135,900,790,.82,.08,.45,.84,.53,true,false,false,0,10);
+    /*
+     * Source rectangles medidos no atlas REAL mapa/quarto_objetos.png
+     * (100x75). Eles nao pertencem ao atlas procedural antigo.
+     * As escalas foram reduzidas/rebalanceadas mantendo o estilo pixel-art,
+     * sem substituir os sprites por formas geometricas.
+     */
+    objeto(f, 0, 1,32,28, 105,150,11.3f,.04,.50,.92,.47,true,true,true,0,0);  /* cama casal */
+    objeto(f,33, 7,20,20, 545,155,10.6f,.06,.48,.88,.48,true,true,true,0,1);  /* berco */
+    objeto(f,55, 1,18,26, 910,145,10.8f,.06,.50,.88,.47,true,true,true,0,2);  /* guarda roupa */
+    objeto(f,75, 6,10,20,1190,160,10.8f,.10,.55,.80,.40,true,true,true,0,3);  /* espelho */
+    objeto(f,87, 9,11,18,1190,470, 9.8f,.08,.48,.84,.48,true,true,true,0,4);  /* comoda alta */
+    objeto(f, 2,29,29,20, 465,555,10.2f,.05,.34,.90,.62,true,true,true,0,5);  /* cama/sofa infantil */
+    objeto(f,34,28,23,20, 120,600, 9.8f,.05,.46,.90,.50,true,true,true,0,6);  /* estante */
+    objeto(f,60,32,20,16, 900,585,10.0f,.06,.38,.88,.58,true,true,true,0,7);  /* bau */
+    objeto(f,82,30,17,17,1120,610, 9.6f,.08,.35,.84,.60,true,false,false,0,8); /* puff */
+    objeto(f, 3,50,13,10, 300,785,10.0f,.08,.34,.84,.60,true,false,false,0,9); /* mesa infantil */
+    objeto(f,44,52, 7, 9, 745,790, 9.5f,.08,.35,.84,.60,true,false,false,0,10);/* criado */
 
-    f->spawnScooby=(Ponto){mapaParaTelaX(450),mapaParaTelaY(500)};
-    f->spawnMaria=(Ponto){mapaParaTelaX(900),mapaParaTelaY(450)};
-    waypoint(f,450,430);waypoint(f,700,430);waypoint(f,1000,430);waypoint(f,1050,650);waypoint(f,750,820);waypoint(f,350,700);
-    spawnBola(f,650,500);spawnBola(f,1000,550);spawnBola(f,500,550);spawnBola(f,1050,800);
+    f->spawnScooby=(Ponto){mapaParaTelaX(500),mapaParaTelaY(760)};
+    f->spawnMaria=(Ponto){mapaParaTelaX(900),mapaParaTelaY(470)};
+    waypoint(f,450,430);waypoint(f,700,430);waypoint(f,1000,430);waypoint(f,1050,650);waypoint(f,750,800);waypoint(f,350,700);
+    spawnBola(f,650,500);spawnBola(f,1000,550);spawnBola(f,500,650);spawnBola(f,1000,780);
 }
 
 void configurarFases(Fase fases[QTD_FASES])
 {
     if(!fases)return;
-
     memset(fases,0,sizeof(Fase)*QTD_FASES);
 
     cozinha(&fases[0]);
