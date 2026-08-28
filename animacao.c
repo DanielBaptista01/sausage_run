@@ -41,10 +41,16 @@ static int distanciaBBoxes(const ComponenteAlpha* a,const ComponenteAlpha* b)
 }
 
 /*
- * Recorte normal por componentes. No perfil estrito (usado somente no WALK
- * da Maria), componentes desconectados a mais de 8 px do corpo principal sao
- * rejeitados. Isso remove especificamente a cabeca da linha seguinte que
- * invade fisicamente a celula atual da sheet, sem alterar escala ou anchor.
+ * Recorte por componentes alpha dentro da celula nominal.
+ *
+ * O perfil estrito e usado em dois casos confirmados por evidencia visual:
+ * - WALK da Maria;
+ * - RUN do Scooby.
+ *
+ * Nessas folhas, partes de uma sprite vizinha entram fisicamente na celula
+ * matematica. O modo normal aceitava componentes grandes mesmo distantes do
+ * corpo principal; o modo estrito so preserva componentes realmente proximos
+ * (<= 8 px), eliminando pata/cabeca/corpo de outro frame sem mudar a escala.
  */
 static SourceRect sourcePorComponentes(const Animacao* a,const ALLEGRO_LOCKED_REGION* lock,
                                         int w,int h,int direcao,int frame,bool estrito)
@@ -243,18 +249,23 @@ bool carregarAnimacao(Animacao* a,const char* caminho,float tempoFrame,float esc
 
     int w=al_get_bitmap_width(a->imagem),h=al_get_bitmap_height(a->imagem);
     bool mariaWalk=strcmp(caminho,"mariaSprites/walk.png")==0;
+    bool scoobyRun=strcmp(caminho,"ScoobySprites/run.png")==0;
     bool carry=strstr(caminho,"ScoobySprites/littleBalls/")!=NULL;
+    bool recorteEstrito=mariaWalk||scoobyRun;
 
     a->framesPorLinha=QTD_FRAMES;a->linhasDirecao=QTD_DIRECOES;
     a->frameW=w/QTD_FRAMES;a->frameH=h/QTD_DIRECOES;
     a->linhaDirecao[DIRECAO_DOWN]=0;a->linhaDirecao[DIRECAO_UP]=1;
     a->linhaDirecao[DIRECAO_LEFT]=2;a->linhaDirecao[DIRECAO_RIGHT]=3;
 
+    /* 1254 nao e divisivel exatamente por 4. celulaNominal() usa limites
+       proporcionais por frame/linha (313/314 px), evitando acumulo de erro em
+       sx/sy. O run recebe ainda filtragem estrita de componentes vizinhos. */
     ALLEGRO_LOCKED_REGION* lock=al_lock_bitmap(a->imagem,ALLEGRO_PIXEL_FORMAT_ABGR_8888_LE,ALLEGRO_LOCK_READONLY);
     for(int d=0;d<QTD_DIRECOES;d++)for(int f=0;f<QTD_FRAMES;f++)
     {
         SourceRect cel=celulaNominal(a,w,h,d,f);
-        a->source[d][f]=lock?sourcePorComponentes(a,lock,w,h,d,f,mariaWalk):
+        a->source[d][f]=lock?sourcePorComponentes(a,lock,w,h,d,f,recorteEstrito):
             (SourceRect){cel.sx+2,cel.sy+2,cel.sw-4,cel.sh-4};
     }
     if(lock&&carry)
@@ -267,8 +278,10 @@ bool carregarAnimacao(Animacao* a,const char* caminho,float tempoFrame,float esc
     if(!validarAnimacao(a,caminho,carry))
     {al_destroy_bitmap(a->imagem);a->imagem=NULL;return false;}
 
-    printf("Sprite OK: %s folha=%dx%d perfil=%s | RIGHT:",caminho,w,h,
-           carry?"carry-right-expandido":(mariaWalk?"maria-walk-estrito":"componentes"));
+    const char* perfil=carry?"carry-right-expandido":
+        (scoobyRun?"scooby-run-estrito":(mariaWalk?"maria-walk-estrito":"componentes"));
+    printf("Sprite OK: %s folha=%dx%d frameBase=%dx%d perfil=%s | RIGHT:",
+           caminho,w,h,a->frameW,a->frameH,perfil);
     for(int f=0;f<QTD_FRAMES;f++)
     {SourceRect r=a->source[DIRECAO_RIGHT][f];printf(" f%d=[%d,%d,%d,%d]",f,r.sx,r.sy,r.sw,r.sh);}
     printf("\n");
@@ -301,7 +314,7 @@ bool carregarSprites(Scooby* s,Maria* m)
     if(!s||!m)return false;
 
     /* Compatibilidade para validacoes genericas. O gameplay usa a hitbox
-       composta de obterHitboxScooby(). */
+       verde calculada por obterHitboxScooby(). */
     s->corpo.hitboxLargura=42.0f;s->corpo.hitboxAltura=20.0f;
     s->corpo.hitboxOffsetX=0.0f;s->corpo.hitboxOffsetY=-53.0f;
 
