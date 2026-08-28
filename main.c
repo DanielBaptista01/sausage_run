@@ -87,16 +87,15 @@ int main(void)
     configurarFases(fases);
 
     /*
-     * Retangulo preto da referencia: ~62x30 px sobre o tronco, com centro
-     * aproximadamente 6 px a esquerda e 61 px acima do ponto logico atual.
-     * carregarSprites() reaplica estes mesmos valores como salvaguarda para
-     * que a calibracao fisica e a calibracao das sheets permaneçam juntas.
+     * Estes quatro campos permanecem apenas para rotinas genericas de
+     * validacao/spawn. A colisao real do Scooby usa HitboxScooby (corpo +
+     * cabeca) calculada por obterHitboxScooby() conforme direcaoSprite.
      */
     scooby.corpo.velocidade=135;
-    scooby.corpo.hitboxLargura=62;
-    scooby.corpo.hitboxAltura=30;
-    scooby.corpo.hitboxOffsetX=-6;
-    scooby.corpo.hitboxOffsetY=-61;
+    scooby.corpo.hitboxLargura=48;
+    scooby.corpo.hitboxAltura=24;
+    scooby.corpo.hitboxOffsetX=0;
+    scooby.corpo.hitboxOffsetY=-31;
     scooby.direcaoSprite=DIRECAO_UP;
 
     maria.corpo.velocidade=96;maria.corpo.hitboxLargura=28;maria.corpo.hitboxAltura=20;maria.corpo.hitboxOffsetX=0;maria.corpo.hitboxOffsetY=-10;maria.direcaoSprite=DIRECAO_LEFT;
