@@ -69,16 +69,55 @@ void atualizarScooby(Scooby* s,const ALLEGRO_KEYBOARD_STATE* teclado,const Fase*
     int fr=a->frameAtual;atualizarAnimacaoLoop(a,dt);if(s->movendo)passo(s,audio,fr,s->correndo,a);
 }
 
+static float clampfLocal(float v,float lo,float hi)
+{
+    if(v<lo)return lo;
+    if(v>hi)return hi;
+    return v;
+}
+
 void atualizarScoobyTransicao(Scooby* s,const Fase* f,const Bola* b,Ponto alvo,float dt)
 {
     if(!s||!f||!b)return;
+
     s->latindo=false;s->mordendo=false;s->coletaPendente=false;s->correndo=false;
-    float dx=alvo.x-s->corpo.x,dy=alvo.y-s->corpo.y,d=sqrtf(dx*dx+dy*dy);
+
+    /*
+     * Esta funcao so e chamada pelo main enquanto estado ==
+     * JOGO_TRANSICAO_FASE, depois que chegouNaSaidaComBola confirmou o
+     * trigger correto. Por isso ela e a UNICA excecao que pode ultrapassar
+     * o colisor inferior. O jogador e a Maria continuam usando
+     * moverPersonagem() e nunca atravessam a madeira em gameplay normal.
+     *
+     * Mesmo na transicao restringimos X a largura da abertura real, para
+     * impedir que a animacao atravesse a madeira ao lado da porta/escada.
+     */
+    float meiaHitbox=s->corpo.hitboxLargura*.5f;
+    float minX=f->triggerSaida.x+meiaHitbox;
+    float maxX=f->triggerSaida.x+f->triggerSaida.largura-meiaHitbox;
+    alvo.x=clampfLocal(alvo.x,minX,maxX);
+
+    float dx=alvo.x-s->corpo.x;
+    float dy=alvo.y-s->corpo.y;
+    float d=sqrtf(dx*dx+dy*dy);
+
     if(d>2.5f)
     {
-        dx/=d;dy/=d;s->movendo=true;s->corpo.direcao=atan2f(dy,dx);s->direcaoSprite=direcaoSpritePorMovimento(dx,dy,s->direcaoSprite);
-        moverPersonagem(&s->corpo,dx*55.0f*dt,dy*55.0f*dt,f);
+        dx/=d;dy/=d;
+        s->movendo=true;
+        s->corpo.direcao=atan2f(dy,dx);
+        s->direcaoSprite=direcaoSpritePorMovimento(dx,dy,s->direcaoSprite);
+
+        float passoMax=55.0f*dt;
+        if(passoMax>d)passoMax=d;
+
+        /* Movimento controlado: deliberadamente nao chama moverPersonagem. */
+        s->corpo.x+=dx*passoMax;
+        s->corpo.y+=dy*passoMax;
+        s->corpo.x=clampfLocal(s->corpo.x,minX,maxX);
     }
-    else s->movendo=false;
+    else
+        s->movendo=false;
+
     atualizarAnimacaoLoop(s->carregandoBola?&s->carregar[b->cor]:&s->walk,dt);
 }
