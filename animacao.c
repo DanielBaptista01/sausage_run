@@ -114,7 +114,6 @@ static SourceRect sourcePorComponentes(const Animacao* a,const ALLEGRO_LOCKED_RE
         if(comps[i].maxY>maxY)maxY=comps[i].maxY;
     }
 
-    /* Pequena folga para antialiasing; nunca reabre a borda da celula. */
     int pad=3;
     minX-=pad;minY-=pad;maxX+=pad;maxY+=pad;
     if(minX<guarda)minX=guarda;if(minY<guarda)minY=guarda;
@@ -132,79 +131,40 @@ static bool validarAnimacao(const Animacao* a,const char* caminho)
     if(!a||!a->imagem)return false;
     int w=al_get_bitmap_width(a->imagem),h=al_get_bitmap_height(a->imagem);
     if(w<QTD_FRAMES*16||h<QTD_DIRECOES*16)return false;
-
     for(int d=0;d<QTD_DIRECOES;d++)for(int f=0;f<QTD_FRAMES;f++)
     {
         SourceRect cel=celulaNominal(a,w,h,d,f),r=a->source[d][f];
-        if(r.sw<=0||r.sh<=0||r.sx<cel.sx||r.sy<cel.sy||
-           r.sx+r.sw>cel.sx+cel.sw||r.sy+r.sh>cel.sy+cel.sh||
-           r.sx<0||r.sy<0||r.sx+r.sw>w||r.sy+r.sh>h)
-        {
-            printf("ERRO sourceRect %s dir=%d frame=%d [%d,%d,%d,%d] cel=[%d,%d,%d,%d]\n",
-                   caminho,d,f,r.sx,r.sy,r.sw,r.sh,cel.sx,cel.sy,cel.sw,cel.sh);
-            return false;
-        }
+        if(r.sw<=0||r.sh<=0||r.sx<cel.sx||r.sy<cel.sy||r.sx+r.sw>cel.sx+cel.sw||r.sy+r.sh>cel.sy+cel.sh||r.sx<0||r.sy<0||r.sx+r.sw>w||r.sy+r.sh>h)
+        {printf("ERRO sourceRect %s dir=%d frame=%d [%d,%d,%d,%d] cel=[%d,%d,%d,%d]\n",caminho,d,f,r.sx,r.sy,r.sw,r.sh,cel.sx,cel.sy,cel.sw,cel.sh);return false;}
     }
     return true;
 }
 
-bool carregarAnimacao(Animacao* a,const char* caminho,float tempoFrame,
-                      float escalaVisual,float anchorX,float anchorY)
+bool carregarAnimacao(Animacao* a,const char* caminho,float tempoFrame,float escalaVisual,float anchorX,float anchorY)
 {
-    if(!a)return false;
-    memset(a,0,sizeof(*a));
-    a->imagem=carregarBitmapFlexivel(caminho);
-    if(!a->imagem)return false;
-
+    if(!a)return false;memset(a,0,sizeof(*a));a->imagem=carregarBitmapFlexivel(caminho);if(!a->imagem)return false;
     int w=al_get_bitmap_width(a->imagem),h=al_get_bitmap_height(a->imagem);
-    a->framesPorLinha=QTD_FRAMES;a->linhasDirecao=QTD_DIRECOES;
-    a->frameW=w/QTD_FRAMES;a->frameH=h/QTD_DIRECOES;
-    a->linhaDirecao[DIRECAO_DOWN]=0;a->linhaDirecao[DIRECAO_UP]=1;
-    a->linhaDirecao[DIRECAO_LEFT]=2;a->linhaDirecao[DIRECAO_RIGHT]=3;
-
+    a->framesPorLinha=QTD_FRAMES;a->linhasDirecao=QTD_DIRECOES;a->frameW=w/QTD_FRAMES;a->frameH=h/QTD_DIRECOES;
+    a->linhaDirecao[DIRECAO_DOWN]=0;a->linhaDirecao[DIRECAO_UP]=1;a->linhaDirecao[DIRECAO_LEFT]=2;a->linhaDirecao[DIRECAO_RIGHT]=3;
     ALLEGRO_LOCKED_REGION* lock=al_lock_bitmap(a->imagem,ALLEGRO_PIXEL_FORMAT_ABGR_8888_LE,ALLEGRO_LOCK_READONLY);
     for(int d=0;d<QTD_DIRECOES;d++)for(int f=0;f<QTD_FRAMES;f++)
-    {
-        SourceRect cel=celulaNominal(a,w,h,d,f);
-        a->source[d][f]=lock?sourcePorComponentes(a,lock,w,h,d,f):
-                              (SourceRect){cel.sx+2,cel.sy+2,cel.sw-4,cel.sh-4};
-    }
+    {SourceRect cel=celulaNominal(a,w,h,d,f);a->source[d][f]=lock?sourcePorComponentes(a,lock,w,h,d,f):(SourceRect){cel.sx+2,cel.sy+2,cel.sw-4,cel.sh-4};}
     if(lock)al_unlock_bitmap(a->imagem);
-
-    a->frameAtual=0;a->acumulador=0;a->tempoFrame=tempoFrame;
-    a->escalaVisual=escalaVisual;a->anchorNormX=anchorX;a->anchorNormY=anchorY;a->ultimoFrameSom=-1;
+    a->frameAtual=0;a->acumulador=0;a->tempoFrame=tempoFrame;a->escalaVisual=escalaVisual;a->anchorNormX=anchorX;a->anchorNormY=anchorY;a->ultimoFrameSom=-1;
     if(!validarAnimacao(a,caminho)){al_destroy_bitmap(a->imagem);a->imagem=NULL;return false;}
-
     printf("Sprite OK: %s folha=%dx%d recorte por componentes | RIGHT:",caminho,w,h);
     for(int f=0;f<QTD_FRAMES;f++){SourceRect r=a->source[DIRECAO_RIGHT][f];printf(" f%d=[%d,%d,%d,%d]",f,r.sx,r.sy,r.sw,r.sh);}printf("\n");
     return true;
 }
 
 void reiniciarAnimacao(Animacao* a){if(a){a->frameAtual=0;a->acumulador=0;a->ultimoFrameSom=-1;}}
-
-void atualizarAnimacaoLoop(Animacao* a,float dt)
-{
-    if(!a||!a->imagem||a->tempoFrame<=0)return;
-    a->acumulador+=dt;
-    while(a->acumulador>=a->tempoFrame){a->acumulador-=a->tempoFrame;a->frameAtual=(a->frameAtual+1)%QTD_FRAMES;}
-}
-
-bool atualizarAnimacaoUmaVez(Animacao* a,float dt)
-{
-    if(!a||!a->imagem)return true;
-    a->acumulador+=dt;
-    if(a->acumulador>=a->tempoFrame){a->acumulador-=a->tempoFrame;a->frameAtual++;if(a->frameAtual>=QTD_FRAMES){reiniciarAnimacao(a);return true;}}
-    return false;
-}
+void atualizarAnimacaoLoop(Animacao* a,float dt){if(!a||!a->imagem||a->tempoFrame<=0)return;a->acumulador+=dt;while(a->acumulador>=a->tempoFrame){a->acumulador-=a->tempoFrame;a->frameAtual=(a->frameAtual+1)%QTD_FRAMES;}}
+bool atualizarAnimacaoUmaVez(Animacao* a,float dt){if(!a||!a->imagem)return true;a->acumulador+=dt;if(a->acumulador>=a->tempoFrame){a->acumulador-=a->tempoFrame;a->frameAtual++;if(a->frameAtual>=QTD_FRAMES){reiniciarAnimacao(a);return true;}}return false;}
 
 void desenharAnimacao(const Animacao* a,Direcao direcao,float x,float y)
 {
-    if(!a||!a->imagem)return;
-    int d=(int)direcao,f=a->frameAtual;
-    if(d<0||d>=QTD_DIRECOES)d=DIRECAO_DOWN;if(f<0||f>=QTD_FRAMES)f=0;
-    int w=al_get_bitmap_width(a->imagem),h=al_get_bitmap_height(a->imagem);
-    SourceRect cel=celulaNominal(a,w,h,d,f),r=a->source[d][f];
-    float s=a->escalaVisual;
+    if(!a||!a->imagem)return;int d=(int)direcao,f=a->frameAtual;if(d<0||d>=QTD_DIRECOES)d=DIRECAO_DOWN;if(f<0||f>=QTD_FRAMES)f=0;
+    int w=al_get_bitmap_width(a->imagem),h=al_get_bitmap_height(a->imagem);SourceRect cel=celulaNominal(a,w,h,d,f),r=a->source[d][f];float s=a->escalaVisual;
     float origemX=x-cel.sw*s*a->anchorNormX,origemY=y-cel.sh*s*a->anchorNormY;
     float dx=origemX+(r.sx-cel.sx)*s,dy=origemY+(r.sy-cel.sy)*s;
     al_draw_scaled_bitmap(a->imagem,r.sx,r.sy,r.sw,r.sh,dx,dy,r.sw*s,r.sh*s,0);
@@ -213,25 +173,14 @@ void desenharAnimacao(const Animacao* a,Direcao direcao,float x,float y)
 bool carregarSprites(Scooby* s,Maria* m)
 {
     if(!s||!m)return false;
-
-    /* Retangulo preto autoritativo: tronco lateral, sem cabeca/cauda. */
-    s->corpo.hitboxLargura=62.0f;
-    s->corpo.hitboxAltura=30.0f;
-    s->corpo.hitboxOffsetX=-6.0f;
-    s->corpo.hitboxOffsetY=-61.0f;
-
+    s->corpo.hitboxLargura=76.0f;s->corpo.hitboxAltura=26.0f;s->corpo.hitboxOffsetX=-13.0f;s->corpo.hitboxOffsetY=-53.0f;
     if(!carregarAnimacao(&s->idle,"ScoobySprites/idle.png",.20f,.37f,.50f,.90f))return false;
     if(!carregarAnimacao(&s->walk,"ScoobySprites/walk.png",.12f,.37f,.50f,.90f))return false;
     if(!carregarAnimacao(&s->run,"ScoobySprites/run.png",.085f,.37f,.50f,.90f))return false;
     if(!carregarAnimacao(&s->bark,"ScoobySprites/bark.png",.085f,.37f,.50f,.90f))return false;
     if(!carregarAnimacao(&s->bite,"ScoobySprites/bite.png",.08f,.37f,.50f,.90f))return false;
-
-    static const char* carry[QTD_CORES_BOLA]={
-        "ScoobySprites/littleBalls/yellow_dog.png","ScoobySprites/littleBalls/green_dog.png",
-        "ScoobySprites/littleBalls/purple_dog.png","ScoobySprites/littleBalls/blue_dog.png",
-        "ScoobySprites/littleBalls/red_dog.png"};
+    static const char* carry[QTD_CORES_BOLA]={"ScoobySprites/littleBalls/yellow_dog.png","ScoobySprites/littleBalls/green_dog.png","ScoobySprites/littleBalls/purple_dog.png","ScoobySprites/littleBalls/blue_dog.png","ScoobySprites/littleBalls/red_dog.png"};
     for(int i=0;i<QTD_CORES_BOLA;i++)if(!carregarAnimacao(&s->carregar[i],carry[i],.14f,.37f,.50f,.90f))return false;
-
     if(!carregarAnimacao(&m->idle,"mariaSprites/idle.png",.20f,.31f,.50f,.93f))return false;
     if(!carregarAnimacao(&m->walk,"mariaSprites/walk.png",.13f,.31f,.50f,.93f))return false;
     if(!carregarAnimacao(&m->run,"mariaSprites/run.png",.095f,.31f,.50f,.93f))return false;
