@@ -50,13 +50,16 @@ Retangulo hitboxPersonagem(const Personagem* p, float x, float y)
 }
 
 /*
- * Hitbox composta autoritativa do Scooby.
+ * Hitbox composta fisica do Scooby.
  *
- * A posicao logica (x,y) continua sendo o contato com o piso. Os retangulos
- * sao deliberadamente menores que a silhueta animada: corpo/tronco + cabeca.
- * Cauda, focinho projetado e patas em extremos de animacao nao entram na
- * geometria fisica. O perfil e estavel entre idle/walk/run/carry e muda
- * somente conforme a direcao, evitando jitter de colisao entre frames.
+ * A captura de tela do F1 mostrou que os dois retangulos anteriores estavam
+ * cerca de 20-30 px abaixo da silhueta real: o ponto logico/anchor fica bem
+ * abaixo do alpha visivel das sheets. Por isso o personagem colidia com bases
+ * de moveis antes de o corpo chegar visualmente ate elas.
+ *
+ * O novo perfil preserva corpo + cabeca, mas reduz excessos e sobe ambas as
+ * regioes. O retangulo ciano (cabeca) fica rente a cabeca/peito e nao inclui
+ * focinho/bola; o corpo nao inclui cauda nem patas projetadas da animacao.
  */
 static Retangulo retCentro(float x,float y,float ox,float oy,float w,float h)
 {
@@ -71,25 +74,23 @@ HitboxScooby obterHitboxScooby(const Scooby* s, float x, float y)
     switch(s->direcaoSprite)
     {
         case DIRECAO_RIGHT:
-            /* [ corpo ][ cabeca ] */
-            h.corpo =retCentro(x,y,-8.0f,-31.0f,48.0f,22.0f);
-            h.cabeca=retCentro(x,y,25.0f,-32.0f,22.0f,22.0f);
+            /* [ corpo ][ cabeca ]; perfil lateral mais estreito e mais alto. */
+            h.corpo =retCentro(x,y,-7.0f,-53.0f,42.0f,18.0f);
+            h.cabeca=retCentro(x,y,25.0f,-63.0f,18.0f,18.0f);
             break;
         case DIRECAO_LEFT:
-            /* [ cabeca ][ corpo ] */
-            h.corpo =retCentro(x,y, 8.0f,-31.0f,48.0f,22.0f);
-            h.cabeca=retCentro(x,y,-25.0f,-32.0f,22.0f,22.0f);
+            /* Espelho fisico da direita; nao altera a sprite LEFT aprovada. */
+            h.corpo =retCentro(x,y, 7.0f,-53.0f,42.0f,18.0f);
+            h.cabeca=retCentro(x,y,-25.0f,-63.0f,18.0f,18.0f);
             break;
         case DIRECAO_UP:
-            /* cabeca acima do tronco */
-            h.corpo =retCentro(x,y,0.0f,-29.0f,30.0f,34.0f);
-            h.cabeca=retCentro(x,y,0.0f,-50.0f,24.0f,20.0f);
+            h.corpo =retCentro(x,y,0.0f,-51.0f,26.0f,28.0f);
+            h.cabeca=retCentro(x,y,0.0f,-72.0f,18.0f,16.0f);
             break;
         case DIRECAO_DOWN:
         default:
-            /* cabeca abaixo/frente do tronco, sem atingir o ponto dos pes */
-            h.corpo =retCentro(x,y,0.0f,-34.0f,30.0f,34.0f);
-            h.cabeca=retCentro(x,y,0.0f,-14.0f,24.0f,20.0f);
+            h.corpo =retCentro(x,y,0.0f,-56.0f,26.0f,28.0f);
+            h.cabeca=retCentro(x,y,0.0f,-36.0f,18.0f,16.0f);
             break;
     }
     return h;
@@ -278,11 +279,9 @@ void validarConfiguracaoFase(Fase* f, const Scooby* s, const Maria* m, int indic
     if (!f || !s || !m) return;
     Ponto ajustado;
 
-    /* O spawn do Scooby usa a hitbox composta real. */
     if (scoobyColide(s,f->spawnScooby.x,f->spawnScooby.y,f))
     {
         printf("WARN F%d %s: spawn Scooby invalido para hitbox composta\n",indice+1,f->nome);
-        /* Mantemos o buscador generico como fallback de recuperacao. */
         if(procurarPontoLivreProximo(&s->corpo,f,f->spawnScooby,&ajustado)) f->spawnScooby=ajustado;
     }
     if (!pontoLivreParaPersonagem(&m->corpo,f,f->spawnMaria.x,f->spawnMaria.y))
