@@ -58,8 +58,13 @@ void atualizarScooby(Scooby* s,const ALLEGRO_KEYBOARD_STATE* teclado,const Fase*
 
     if(s->movendo)
     {
-        float n=sqrtf(dx*dx+dy*dy);dx/=n;dy/=n;s->corpo.direcao=atan2f(dy,dx);s->direcaoSprite=direcaoSpritePorMovimento(dx,dy,s->direcaoSprite);
-        float v=s->correndo?235.0f:135.0f;moverPersonagem(&s->corpo,dx*v*dt,dy*v*dt,f);
+        float n=sqrtf(dx*dx+dy*dy);dx/=n;dy/=n;
+        s->corpo.direcao=atan2f(dy,dx);
+        s->direcaoSprite=direcaoSpritePorMovimento(dx,dy,s->direcaoSprite);
+        float v=s->correndo?235.0f:135.0f;
+
+        /* Colisao real usa corpo + cabeca conforme a direcao ja atualizada. */
+        moverScooby(s,dx*v*dt,dy*v*dt,f);
     }
 
     if(s->cooldownSomCorrida>0)s->cooldownSomCorrida-=dt;
@@ -83,18 +88,20 @@ void atualizarScoobyTransicao(Scooby* s,const Fase* f,const Bola* b,Ponto alvo,f
     s->latindo=false;s->mordendo=false;s->coletaPendente=false;s->correndo=false;
 
     /*
-     * Esta funcao so e chamada pelo main enquanto estado ==
-     * JOGO_TRANSICAO_FASE, depois que chegouNaSaidaComBola confirmou o
-     * trigger correto. Por isso ela e a UNICA excecao que pode ultrapassar
-     * o colisor inferior. O jogador e a Maria continuam usando
-     * moverPersonagem() e nunca atravessam a madeira em gameplay normal.
-     *
-     * Mesmo na transicao restringimos X a largura da abertura real, para
-     * impedir que a animacao atravesse a madeira ao lado da porta/escada.
+     * Esta funcao so roda em JOGO_TRANSICAO_FASE. O limite horizontal usa a
+     * extensao REAL da hitbox composta na direcao corrente, para que corpo e
+     * cabeca atravessem apenas a abertura do checkpoint.
      */
-    float meiaHitbox=s->corpo.hitboxLargura*.5f;
-    float minX=f->triggerSaida.x+meiaHitbox;
-    float maxX=f->triggerSaida.x+f->triggerSaida.largura-meiaHitbox;
+    HitboxScooby h0=obterHitboxScooby(s,0.0f,0.0f);
+    float minRel=fminf(h0.corpo.x,h0.cabeca.x);
+    float maxRel=fmaxf(h0.corpo.x+h0.corpo.largura,
+                       h0.cabeca.x+h0.cabeca.largura);
+    float extEsq=-minRel;
+    float extDir=maxRel;
+
+    float minX=f->triggerSaida.x+extEsq;
+    float maxX=f->triggerSaida.x+f->triggerSaida.largura-extDir;
+    if(maxX<minX){float meio=f->triggerSaida.x+f->triggerSaida.largura*.5f;minX=maxX=meio;}
     alvo.x=clampfLocal(alvo.x,minX,maxX);
 
     float dx=alvo.x-s->corpo.x;
@@ -111,7 +118,7 @@ void atualizarScoobyTransicao(Scooby* s,const Fase* f,const Bola* b,Ponto alvo,f
         float passoMax=55.0f*dt;
         if(passoMax>d)passoMax=d;
 
-        /* Movimento controlado: deliberadamente nao chama moverPersonagem. */
+        /* Excecao controlada: a transicao pode atravessar a borda inferior. */
         s->corpo.x+=dx*passoMax;
         s->corpo.y+=dy*passoMax;
         s->corpo.x=clampfLocal(s->corpo.x,minX,maxX);
