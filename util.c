@@ -50,16 +50,16 @@ Retangulo hitboxPersonagem(const Personagem* p, float x, float y)
 }
 
 /*
- * Hitbox composta fisica do Scooby.
+ * Hitbox fisica oficial do Scooby.
  *
- * A captura de tela do F1 mostrou que os dois retangulos anteriores estavam
- * cerca de 20-30 px abaixo da silhueta real: o ponto logico/anchor fica bem
- * abaixo do alpha visivel das sheets. Por isso o personagem colidia com bases
- * de moveis antes de o corpo chegar visualmente ate elas.
+ * O adendo atual determina que o retangulo VERDE do F1 seja a unica
+ * geometria utilizada pela fisica. Mantemos HitboxScooby por compatibilidade
+ * de API, mas cabeca recebe exatamente o mesmo retangulo de corpo. Assim nao
+ * existe uma segunda regiao invisivel interferindo em movimento/captura.
  *
- * O novo perfil preserva corpo + cabeca, mas reduz excessos e sobe ambas as
- * regioes. O retangulo ciano (cabeca) fica rente a cabeca/peito e nao inclui
- * focinho/bola; o corpo nao inclui cauda nem patas projetadas da animacao.
+ * O perfil continua adaptavel por direcao para acompanhar o volume principal
+ * do tronco. A altura maxima efetiva e 28 px (UP/DOWN), valor usado para
+ * calibrar os corredores superiores entre parede e base dos moveis.
  */
 static Retangulo retCentro(float x,float y,float ox,float oy,float w,float h)
 {
@@ -74,23 +74,23 @@ HitboxScooby obterHitboxScooby(const Scooby* s, float x, float y)
     switch(s->direcaoSprite)
     {
         case DIRECAO_RIGHT:
-            h.corpo =retCentro(x,y,-7.0f,-53.0f,42.0f,18.0f);
-            h.cabeca=retCentro(x,y,25.0f,-63.0f,18.0f,18.0f);
+            h.corpo=retCentro(x,y,-7.0f,-53.0f,42.0f,18.0f);
             break;
         case DIRECAO_LEFT:
-            h.corpo =retCentro(x,y, 7.0f,-53.0f,42.0f,18.0f);
-            h.cabeca=retCentro(x,y,-25.0f,-63.0f,18.0f,18.0f);
+            h.corpo=retCentro(x,y,7.0f,-53.0f,42.0f,18.0f);
             break;
         case DIRECAO_UP:
-            h.corpo =retCentro(x,y,0.0f,-51.0f,26.0f,28.0f);
-            h.cabeca=retCentro(x,y,0.0f,-72.0f,18.0f,16.0f);
+            h.corpo=retCentro(x,y,0.0f,-51.0f,26.0f,28.0f);
             break;
         case DIRECAO_DOWN:
         default:
-            h.corpo =retCentro(x,y,0.0f,-56.0f,26.0f,28.0f);
-            h.cabeca=retCentro(x,y,0.0f,-36.0f,18.0f,16.0f);
+            h.corpo=retCentro(x,y,0.0f,-56.0f,26.0f,28.0f);
             break;
     }
+
+    /* Compatibilidade: qualquer rotina antiga que consulte cabeca ve a mesma
+       geometria da hitbox verde; a uniao fisica continua sendo um so retangulo. */
+    h.cabeca=h.corpo;
     return h;
 }
 
@@ -105,32 +105,25 @@ bool scoobyDentroArea(const Scooby* s,float x,float y,const Fase* f)
 {
     if(!s||!f)return false;
 
-    /*
-     * A hitbox visual foi elevada para acompanhar o corpo. Por isso o limite
-     * do piso nao pode depender apenas dela: o anchor logico tambem precisa
-     * permanecer dentro da area caminhavel, impedindo voltar a subir na
-     * moldura de madeira inferior. A transicao de fase continua sendo a unica
-     * excecao, pois usa atualizarScoobyTransicao() e nao moverScooby().
-     */
+    /* O anchor logico tambem deve permanecer no piso para impedir a moldura
+       inferior; a transicao continua sendo a unica excecao controlada. */
     if(!pontoDentroRetangulo(x,y,f->areaJogavel))return false;
 
     HitboxScooby h=obterHitboxScooby(s,x,y);
-    return retDentroArea(h.corpo,f->areaJogavel) &&
-           retDentroArea(h.cabeca,f->areaJogavel);
+    return retDentroArea(h.corpo,f->areaJogavel);
 }
 
 bool scoobyColide(const Scooby* s,float x,float y,const Fase* f)
 {
     if(!s||!f||!scoobyDentroArea(s,x,y,f))return true;
-    HitboxScooby h=obterHitboxScooby(s,x,y);
+    Retangulo h=obterHitboxScooby(s,x,y).corpo;
 
     for(int i=0;i<f->quantidadeObstaculos;i++)
     {
         const Obstaculo* o=&f->obstaculos[i];
         if(!o->bloqueiaMovimento)continue;
         Retangulo r={o->x,o->y,o->largura,o->altura};
-        if(retangulosIntersectam(h.corpo,r)||retangulosIntersectam(h.cabeca,r))
-            return true;
+        if(retangulosIntersectam(h,r))return true;
     }
     return false;
 }
@@ -289,7 +282,7 @@ void validarConfiguracaoFase(Fase* f, const Scooby* s, const Maria* m, int indic
 
     if (scoobyColide(s,f->spawnScooby.x,f->spawnScooby.y,f))
     {
-        printf("WARN F%d %s: spawn Scooby invalido para hitbox composta\n",indice+1,f->nome);
+        printf("WARN F%d %s: spawn Scooby invalido para hitbox verde\n",indice+1,f->nome);
         if(procurarPontoLivreProximo(&s->corpo,f,f->spawnScooby,&ajustado)) f->spawnScooby=ajustado;
     }
     if (!pontoLivreParaPersonagem(&m->corpo,f,f->spawnMaria.x,f->spawnMaria.y))
