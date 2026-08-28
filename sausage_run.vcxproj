@@ -102,6 +102,7 @@
     <ClCompile Include="ia.c" />
     <ClCompile Include="scooby.c" />
     <ClCompile Include="render.c" />
+    <ClCompile Include="ui.c" />
     <ClCompile Include="audio.c" />
   </ItemGroup>
 
