@@ -81,16 +81,46 @@ bool resolverCaminhoRecurso(const char* relativo,char* saida,size_t tamanho)
     return n>0&&(size_t)n<tamanho;
 }
 
+/*
+ * As sprite sheets dos personagens sao analisadas pixel a pixel em
+ * animacao.c para calcular os source rectangles e eliminar vazamento entre
+ * celulas. Quando elas eram carregadas como VIDEO_BITMAP, cada al_lock_bitmap
+ * forçava leitura/sincronizacao da textura com a GPU/Direct3D. Em Debug isso
+ * podia deixar a aplicacao dezenas de segundos parada em "Carregando recursos".
+ *
+ * Carregamos apenas as folhas de personagens como MEMORY_BITMAP durante essa
+ * etapa de preprocessamento. Antes de a primeira fase ser carregada,
+ * carregarRecursosFase() chama al_convert_memory_bitmaps(), convertendo-as de
+ * volta para o formato otimizado do display. Assim mantemos exatamente o mesmo
+ * algoritmo de recorte, sem sacrificar o desempenho durante a gameplay.
+ */
+static bool recursoEhSpritePersonagem(const char* caminho)
+{
+    if(!caminho)return false;
+    return strncmp(caminho,"ScoobySprites/",14)==0 ||
+           strncmp(caminho,"mariaSprites/",13)==0;
+}
+
 ALLEGRO_BITMAP* carregarBitmapFlexivel(const char* caminho)
 {
     char absoluto[1024];
     if(!resolverCaminhoRecurso(caminho,absoluto,sizeof(absoluto)))return NULL;
     if(!al_filename_exists(absoluto)){printf("ERRO asset ausente: %s\n",caminho);return NULL;}
 
+    bool memoriaTemporaria=recursoEhSpritePersonagem(caminho);
+    int flagsAnteriores=al_get_new_bitmap_flags();
+    if(memoriaTemporaria)
+        al_set_new_bitmap_flags(flagsAnteriores|ALLEGRO_MEMORY_BITMAP);
+
     ALLEGRO_BITMAP* bmp=al_load_bitmap(absoluto);
-    if(bmp)return bmp;
+    if(bmp)
+    {
+        if(memoriaTemporaria)al_set_new_bitmap_flags(flagsAnteriores);
+        return bmp;
+    }
 
     bmp=carregarBitmapWICSeguro(absoluto);
+    if(memoriaTemporaria)al_set_new_bitmap_flags(flagsAnteriores);
     if(bmp){printf("WIC: %s\n",caminho);return bmp;}
 
     printf("ERRO asset existe mas nao decodifica: %s\n",caminho);
@@ -213,6 +243,13 @@ void descarregarFase(Fase* fase)
 bool carregarRecursosFase(RecursosMapa* recursos,Fase fases[QTD_FASES],int indiceFase)
 {
     if(!recursos||!fases||indiceFase<0||indiceFase>=QTD_FASES)return false;
+
+    /*
+     * Este e o primeiro ponto chamado depois de carregarSprites() na
+     * inicializacao. Converte em lote as folhas temporariamente carregadas em
+     * RAM para bitmaps do display, sem repetir a leitura pixel-a-pixel.
+     */
+    al_convert_memory_bitmaps();
 
     if(recursos->faseCarregada>=0&&recursos->faseCarregada<QTD_FASES&&recursos->faseCarregada!=indiceFase)
         descarregarFase(&fases[recursos->faseCarregada]);
