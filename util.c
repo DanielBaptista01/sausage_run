@@ -273,6 +273,13 @@ void resetarPersonagensNaFase(Scooby* s, Maria* m, Bola* b,
 
 bool chegouNaSaidaComBola(const Scooby* s, const Fase* f)
 {
-    if(!s||!f||!s->carregandoBola) return false;
-    return retangulosIntersectam(hitboxPersonagem(&s->corpo,s->corpo.x,s->corpo.y), f->triggerSaida);
+    if(!s||!f||!s->carregandoBola)return false;
+
+    /*
+     * O checkpoint representa a abertura real. Usar apenas intersecao da
+     * hitbox fazia a fase disparar lateralmente antes das patas entrarem no
+     * vao. O ponto logico de Scooby e exatamente o contato das patas com o
+     * chao, portanto ele precisa estar DENTRO do trigger.
+     */
+    return pontoDentroRetangulo(s->corpo.x,s->corpo.y,f->triggerSaida);
 }
