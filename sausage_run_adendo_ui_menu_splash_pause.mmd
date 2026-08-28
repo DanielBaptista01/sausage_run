@@ -1,0 +1,130 @@
+flowchart TD
+
+ROOT["SAUSAGE RUN — ADENDO TÉCNICO DE UI/UX (SPLASHART, MENU PRINCIPAL E MENU DE PAUSA)<br/><br/>Objetivo: formalizar tecnicamente a implementação de uma tela de carregamento com splashart, um menu principal completo e uma tela de opções/pausa acionada pela tecla ESC durante o jogo.<br/><br/>Escopo: criação visual da splashart, estrutura de navegação do menu principal, tela de teclas, tela de história, tela de desenvolvedor e menu de pausa com navegação funcional e integrada ao fluxo do jogo."]
+
+ROOT --> SPLASH["A — SPLASHART / TELA DE CARREGAMENTO"]
+ROOT --> MENU["B — MENU PRINCIPAL"]
+ROOT --> PAUSE["C — MENU DE PAUSA / ESC"]
+ROOT --> INPUT["D — NAVEGAÇÃO, INPUT E TRANSIÇÕES"]
+ROOT --> ASSETS["E — ASSETS, ARQUITETURA E INTEGRAÇÃO"]
+ROOT --> ORDER["F — ORDEM DE IMPLEMENTAÇÃO"]
+ROOT --> VALID["G — VALIDAÇÃO / CRITÉRIOS DE ACEITE"]
+
+%% ============================================================================
+%% A — SPLASHART / TELA DE CARREGAMENTO
+%% ============================================================================
+
+SPLASH --> S1["A1 — Criar uma splashart para a tela de carregamento do jogo<br/><br/>Requisito obrigatório:<br/>desenvolver uma tela de carregamento com identidade visual própria do jogo, apresentando uma splashart divertida e dinâmica.<br/><br/>Tema obrigatório da arte:<br/>Scooby correndo da Maria.<br/><br/>Objetivo visual:<br/>transmitir perseguição, humor, energia e personalidade para o jogo logo na abertura."]
+
+SPLASH --> S2["A2 — Direção artística da splashart<br/><br/>A imagem de fundo deve ser:<br/>- divertida;<br/>- dinâmica;<br/>- coerente com o universo visual do jogo;<br/>- legível por trás de elementos de interface;<br/>- apropriada para tela inicial / carregamento.<br/><br/>A composição deve sugerir movimento, por exemplo:<br/>- Scooby em fuga;<br/>- Maria correndo atrás dele;<br/>- postura corporal expressiva;<br/>- sensação de velocidade;<br/>- ambiente estilizado coerente com a casa/fases do jogo."]
+
+SPLASH --> S3["A3 — Requisitos funcionais da tela de carregamento<br/><br/>A tela de carregamento deve existir como estado próprio de interface.<br/><br/>Deve permitir pelo menos uma das opções abaixo:<br/>- exibir por tempo mínimo controlado;<br/>- exibir enquanto assets são carregados;<br/>- exibir até transição para o menu principal.<br/><br/>Independentemente do método, a transição final deve levar ao MENU PRINCIPAL."]
+
+SPLASH --> S4["A4 — Elementos opcionais recomendados na splashart<br/><br/>Podem ser adicionados, se desejado, elementos como:<br/>- logo/título 'Sausage Run';<br/>- texto 'Carregando...';<br/>- indicador simples de carregamento;<br/>- fade-in/fade-out.<br/><br/>Esses elementos não são obrigatórios se comprometerem a legibilidade, mas a tela deve parecer um estado intencional do jogo, não apenas uma imagem solta."]
+
+SPLASH --> S5["A5 — Critério visual obrigatório da splashart<br/><br/>A arte deve funcionar como fundo de carregamento sem poluir excessivamente a tela.<br/><br/>Os personagens precisam estar reconhecíveis e a cena deve comunicar claramente que Scooby está correndo da Maria."]
+
+%% ============================================================================
+%% B — MENU PRINCIPAL
+%% ============================================================================
+
+MENU --> M1["B1 — Implementar menu principal completo do jogo<br/><br/>Requisito obrigatório:<br/>criar um MENU PRINCIPAL estruturado, com imagem de fundo, navegação por teclado e opções funcionais."]
+
+MENU --> M2["B2 — Fundo do menu principal<br/><br/>O menu principal deve usar uma imagem de fundo divertida e dinâmica, seguindo a mesma proposta temática da splashart:<br/>Scooby correndo da Maria.<br/><br/>Pode reutilizar a splashart ou usar uma variação dela, desde que o resultado final fique apropriado para menu."]
+
+MENU --> M3["B3 — Opções obrigatórias do menu principal<br/><br/>O menu principal deve conter EXATAMENTE as seguintes opções visíveis ao usuário:<br/><br/>- JOGAR<br/>- TECLAS<br/>- HISTÓRIA<br/>- DESENVOLVEDOR<br/>- SAIR"]
+
+MENU --> M4["B4 — Função da opção JOGAR<br/><br/>Ao selecionar 'JOGAR', o jogo deve iniciar normalmente, entrando no fluxo principal de gameplay (primeira fase ou ponto de entrada padrão já definido pelo projeto)."]
+
+MENU --> M5["B5 — Função da opção TECLAS<br/><br/>Ao selecionar 'TECLAS', abrir uma tela própria mostrando os controles do jogo.<br/><br/>Conteúdo mínimo esperado:<br/>- movimentação;<br/>- tecla de interação, se existir;<br/>- ESC para menu de pausa/opções;<br/>- qualquer outra tecla relevante do jogo.<br/><br/>A tela deve permitir retorno ao menu principal."]
+
+MENU --> M6["B6 — Função da opção HISTÓRIA<br/><br/>Ao selecionar 'HISTÓRIA', abrir uma tela própria contendo o contexto narrativo do jogo.<br/><br/>Objetivo:<br/>explicar de forma breve e clara a premissa do Sausage Run.<br/><br/>A tela deve permitir retorno ao menu principal."]
+
+MENU --> M7["B7 — Função da opção DESENVOLVEDOR<br/><br/>Ao selecionar 'DESENVOLVEDOR', abrir uma tela própria com informações do desenvolvedor ou da equipe.<br/><br/>Conteúdo esperado:<br/>- nome(s);<br/>- curso/grupo, se aplicável;<br/>- contexto acadêmico ou institucional, se desejado.<br/><br/>A tela deve permitir retorno ao menu principal."]
+
+MENU --> M8["B8 — Função da opção SAIR<br/><br/>Ao selecionar 'SAIR', encerrar o jogo/aplicação de forma limpa, liberando recursos adequadamente."]
+
+MENU --> M9["B9 — Estado visual do menu principal<br/><br/>O item atualmente selecionado no menu deve ficar visualmente destacado.<br/><br/>Exemplos válidos de destaque:<br/>- cor diferente;<br/>- moldura;<br/>- seta lateral;<br/>- aumento de escala;<br/>- brilho/realce.<br/><br/>O usuário deve perceber claramente qual opção está focada."]
+
+%% ============================================================================
+%% C — MENU DE PAUSA / ESC
+%% ============================================================================
+
+PAUSE --> P1["C1 — Implementar menu de opções/pausa ao apertar ESC durante o jogo<br/><br/>Requisito obrigatório:<br/>ao pressionar ESC durante uma fase/gameplay, o jogo deve abrir uma tela/menu de pausa sobre o jogo atual ou em tela dedicada."]
+
+PAUSE --> P2["C2 — O jogo deve pausar efetivamente<br/><br/>Ao abrir o menu de pausa:<br/>- gameplay deve ser interrompido;<br/>- movimentação deve parar;<br/>- IA/inimigos devem parar;<br/>- timers sensíveis ao gameplay devem ser pausados, quando aplicável.<br/><br/>O jogo não pode continuar rodando normalmente em segundo plano como se nada tivesse acontecido."]
+
+PAUSE --> P3["C3 — Opções obrigatórias do menu de pausa<br/><br/>A tela acionada por ESC deve conter EXATAMENTE as seguintes opções visíveis ao usuário:<br/><br/>- CONTINUE<br/>- TECLAS<br/>- REINICIAR<br/>- RETORNAR AO MENU"]
+
+PAUSE --> P4["C4 — Função da opção CONTINUE<br/><br/>Ao selecionar 'CONTINUE', o menu de pausa deve fechar e o jogo deve retomar exatamente do ponto onde foi pausado."]
+
+PAUSE --> P5["C5 — Função da opção TECLAS no menu de pausa<br/><br/>Ao selecionar 'TECLAS' no menu de pausa, abrir a tela de controles sem perder o estado atual da partida.<br/><br/>Ao retornar dessa tela, o usuário deve voltar ao menu de pausa e então poder continuar a partida."]
+
+PAUSE --> P6["C6 — Função da opção REINICIAR<br/><br/>Ao selecionar 'REINICIAR', a fase atual deve ser reiniciada corretamente.<br/><br/>Requisitos:<br/>- reposicionar personagens;<br/>- restaurar bolas/objetivos da fase;<br/>- reinicializar estados temporários da fase;<br/>- limpar estados transitórios que pertencem à fase atual."]
+
+PAUSE --> P7["C7 — Função da opção RETORNAR AO MENU<br/><br/>Ao selecionar 'RETORNAR AO MENU', sair da gameplay atual e voltar ao MENU PRINCIPAL.<br/><br/>Requisito:<br/>a transição deve ser limpa, sem deixar estado corrompido da fase anterior."]
+
+PAUSE --> P8["C8 — Aparência do menu de pausa<br/><br/>O menu de pausa deve se diferenciar visualmente do gameplay.<br/><br/>Soluções recomendadas:<br/>- overlay semitransparente escurecendo o fundo;<br/>- caixa central com opções;<br/>- título como 'PAUSADO' ou 'OPÇÕES'.<br/><br/>O gameplay ao fundo pode continuar visível, mas sem estar ativo."]
+
+%% ============================================================================
+%% D — NAVEGAÇÃO / INPUT / TRANSIÇÕES
+%% ============================================================================
+
+INPUT --> I1["D1 — Navegação por teclado obrigatória<br/><br/>O menu principal e o menu de pausa devem ser navegáveis por teclado.<br/><br/>Controles recomendados:<br/>- seta para cima = item anterior;<br/>- seta para baixo = próximo item;<br/>- ENTER = confirmar;<br/>- ESC = voltar/fechar, quando aplicável."]
+
+INPUT --> I2["D2 — Comportamento do ESC em cada contexto<br/><br/>Regras recomendadas:<br/>- no gameplay: abre o menu de pausa;<br/>- no menu de pausa: pode voltar para CONTINUE/fechar menu, se desejado, desde que seja consistente;<br/>- nas telas auxiliares (TECLAS, HISTÓRIA, DESENVOLVEDOR): ESC retorna à tela anterior apropriada."]
+
+INPUT --> I3["D3 — Fluxo de telas obrigatório<br/><br/>Fluxo esperado:<br/>SPLASH/CARREGAMENTO -> MENU PRINCIPAL -> JOGAR -> GAMEPLAY -> ESC -> MENU DE PAUSA<br/><br/>Fluxos auxiliares:<br/>MENU PRINCIPAL -> TECLAS -> MENU PRINCIPAL<br/>MENU PRINCIPAL -> HISTÓRIA -> MENU PRINCIPAL<br/>MENU PRINCIPAL -> DESENVOLVEDOR -> MENU PRINCIPAL<br/>GAMEPLAY -> ESC -> TECLAS -> MENU DE PAUSA"]
+
+INPUT --> I4["D4 — Seleção inicial padronizada<br/><br/>Ao abrir um menu, deve existir uma opção inicial já focada.<br/><br/>Sugestão recomendada:<br/>- no menu principal: foco inicial em 'JOGAR';<br/>- no menu de pausa: foco inicial em 'CONTINUE'."]
+
+INPUT --> I5["D5 — Transições visuais recomendadas<br/><br/>Podem ser utilizados, se conveniente:<br/>- fade entre splash e menu;<br/>- fade ao entrar na fase;<br/>- escurecimento suave ao abrir pausa;<br/>- retorno limpo entre submenus.<br/><br/>A navegação deve parecer integrada e profissional."]
+
+%% ============================================================================
+%% E — ASSETS / ARQUITETURA / INTEGRAÇÃO
+%% ============================================================================
+
+ASSETS --> A1["E1 — Estruturar estados de interface/telas<br/><br/>A arquitetura do jogo deve passar a suportar explicitamente estados/telas de UI, por exemplo:<br/>- splash/loading;<br/>- menu principal;<br/>- submenu teclas;<br/>- submenu história;<br/>- submenu desenvolvedor;<br/>- gameplay;<br/>- menu de pausa.<br/><br/>Não implementar tudo de forma improvisada no mesmo bloco de gameplay."]
+
+ASSETS --> A2["E2 — Carregamento e gerenciamento de assets<br/><br/>Se forem usados novos bitmaps/fontes para splashart e menus, eles devem ser carregados, armazenados e liberados corretamente.<br/><br/>Revisar ciclo de vida dos recursos para evitar vazamento, uso nulo ou dupla liberação."]
+
+ASSETS --> A3["E3 — Reutilização de layout e componentes<br/><br/>Sempre que possível, reutilizar estruturas auxiliares para:<br/>- desenhar listas de opções;<br/>- controlar item selecionado;<br/>- desenhar caixas/overlays;<br/>- renderizar textos e títulos.<br/><br/>Objetivo:<br/>evitar duplicação excessiva entre menu principal e menu de pausa."]
+
+ASSETS --> A4["E4 — Texto de conteúdo das telas auxiliares<br/><br/>As telas TECLAS, HISTÓRIA e DESENVOLVEDOR devem ter conteúdo real, ainda que conciso.<br/><br/>Não deixar telas vazias ou com placeholders genéricos permanentes."]
+
+ASSETS --> A5["E5 — Compatibilidade com a resolução atual do jogo<br/><br/>As novas telas devem respeitar a resolução/proporção já usada no projeto, mantendo legibilidade e posicionamento correto.<br/><br/>Se necessário, centralizar elementos ou aplicar margens seguras."]
+
+%% ============================================================================
+%% F — ORDEM
+%% ============================================================================
+
+ORDER --> O1["1 — Criar/estruturar estados de tela da UI"]
+O1 --> O2["2 — Implementar splash/loading screen"]
+O2 --> O3["3 — Implementar menu principal"]
+O3 --> O4["4 — Implementar submenus TECLAS, HISTÓRIA e DESENVOLVEDOR"]
+O4 --> O5["5 — Integrar a opção JOGAR ao início da gameplay"]
+O5 --> O6["6 — Implementar menu de pausa acionado por ESC"]
+O6 --> O7["7 — Pausar e retomar gameplay corretamente"]
+O7 --> O8["8 — Implementar REINICIAR e RETORNAR AO MENU"]
+O8 --> O9["9 — Revisar navegação, transições e retorno entre telas"]
+O9 --> VALID
+
+%% ============================================================================
+%% G — VALIDAÇÃO
+%% ============================================================================
+
+VALID --> V1["G1 — Teste da splashart / carregamento<br/><br/>Aceite:<br/>- existe tela de carregamento/splash;<br/>- a arte mostra Scooby correndo da Maria;<br/>- a tela transita corretamente para o menu principal."]
+
+VALID --> V2["G2 — Teste do menu principal<br/><br/>Aceite:<br/>- o menu principal existe;<br/>- possui fundo divertido/dinâmico;<br/>- contém exatamente: JOGAR, TECLAS, HISTÓRIA, DESENVOLVEDOR, SAIR;<br/>- o item selecionado fica visualmente destacado;<br/>- a navegação por teclado funciona."]
+
+VALID --> V3["G3 — Teste dos submenus do menu principal<br/><br/>Aceite:<br/>- TECLAS abre uma tela de controles e retorna ao menu;<br/>- HISTÓRIA abre uma tela de narrativa e retorna ao menu;<br/>- DESENVOLVEDOR abre uma tela informativa e retorna ao menu."]
+
+VALID --> V4["G4 — Teste do fluxo JOGAR<br/><br/>Aceite:<br/>- ao selecionar JOGAR, o gameplay inicia corretamente;<br/>- não há corrupção de estado entre menu e jogo."]
+
+VALID --> V5["G5 — Teste do ESC / pausa<br/><br/>Aceite:<br/>- pressionar ESC durante o jogo abre o menu de pausa;<br/>- o gameplay pausa de verdade;<br/>- o menu contém exatamente: CONTINUE, TECLAS, REINICIAR, RETORNAR AO MENU."]
+
+VALID --> V6["G6 — Teste funcional das opções do menu de pausa<br/><br/>Aceite:<br/>- CONTINUE retoma a partida exatamente do ponto pausado;<br/>- TECLAS abre a tela de controles e retorna ao menu de pausa;<br/>- REINICIAR reinicia corretamente a fase atual;<br/>- RETORNAR AO MENU volta ao menu principal sem corromper estados."]
+
+VALID --> V7["G7 — Teste de navegação e retorno<br/><br/>Aceite:<br/>- ENTER confirma;<br/>- setas navegam;<br/>- ESC funciona consistentemente para voltar/abrir pausa;<br/>- não existem telas sem saída;<br/>- não há travamento de input ao alternar entre estados."]
+
+VALID --> V8["DEFINIÇÃO DE PRONTO<br/><br/>A implementação só é considerada concluída quando o jogo possuir: (1) splashart/tela de carregamento com Scooby correndo da Maria; (2) menu principal com as opções JOGAR, TECLAS, HISTÓRIA, DESENVOLVEDOR e SAIR; e (3) menu de pausa acionado por ESC com CONTINUE, TECLAS, REINICIAR e RETORNAR AO MENU, tudo funcional, navegável e integrado ao fluxo do jogo."]
