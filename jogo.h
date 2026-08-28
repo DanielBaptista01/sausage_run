@@ -59,6 +59,12 @@ typedef struct { float x, y; } Ponto;
 typedef struct { float x, y, largura, altura; } Retangulo;
 typedef struct { int sx, sy, sw, sh; } SourceRect;
 
+/* Hitbox fisica real do Scooby: duas regioes independentes. */
+typedef struct {
+    Retangulo corpo;
+    Retangulo cabeca;
+} HitboxScooby;
+
 typedef struct {
     ALLEGRO_BITMAP* imagem;
     int frameAtual;
@@ -216,6 +222,12 @@ bool personagemColide(const Personagem* p, float novoX, float novoY, const Fase*
 void moverPersonagem(Personagem* p, float dx, float dy, const Fase* fase);
 bool pontoLivreParaPersonagem(const Personagem* p, const Fase* fase, float x, float y);
 bool procurarPontoLivreProximo(const Personagem* p, const Fase* fase, Ponto origem, Ponto* resultado);
+
+HitboxScooby obterHitboxScooby(const Scooby* scooby, float x, float y);
+bool scoobyDentroArea(const Scooby* scooby, float x, float y, const Fase* fase);
+bool scoobyColide(const Scooby* scooby, float novoX, float novoY, const Fase* fase);
+void moverScooby(Scooby* scooby, float dx, float dy, const Fase* fase);
+
 bool spawnBolaValido(const Fase* fase, const Personagem* scooby, const Personagem* maria, Ponto p);
 bool pontoAlcancavel(const Fase* fase, const Personagem* personagem, Ponto origem, Ponto destino);
 void validarConfiguracaoFase(Fase* fase, const Scooby* scooby, const Maria* maria, int indiceFase);
