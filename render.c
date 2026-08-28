@@ -50,12 +50,6 @@ static void hud(const RecursosMapa* r,const Fase* f,const Scooby* s,const Bola* 
         al_draw_text(r->fonte,al_map_rgb(255,255,255),640,638,ALLEGRO_ALIGN_CENTRE,"WASD mover | Shift correr | Espaco latir | E pegar bola");
         al_draw_text(r->fonte,al_map_rgb(255,225,120),640,666,ALLEGRO_ALIGN_CENTRE,"Encontre a bola e escape pela passagem real sem Maria capturar Scooby.");
     }
-    if(estado==JOGO_PAUSADO)
-    {
-        al_draw_filled_rectangle(0,0,LARGURA_TELA,ALTURA_TELA,al_map_rgba(0,0,0,165));
-        al_draw_text(r->fonte,al_map_rgb(255,255,255),640,330,ALLEGRO_ALIGN_CENTRE,"PAUSADO");
-        al_draw_text(r->fonte,al_map_rgb(220,220,225),640,365,ALLEGRO_ALIGN_CENTRE,"Esc para continuar");
-    }
 }
 
 static void caixa(Retangulo r,ALLEGRO_COLOR c,float esp){al_draw_rectangle(r.x,r.y,r.x+r.largura,r.y+r.altura,c,esp);}
@@ -147,7 +141,8 @@ static void debugDraw(const Fase* f,const Scooby* s,const Maria* m,const Bola* b
 }
 
 void desenharCena(const Fase* f,const RecursosMapa* r,const Scooby* s,const Maria* m,const Bola* b,
-                  const EventoSom* som,bool debug,int vidas,int faseAtual,EstadoJogo estado,float fade,float tutorial)
+                  const EventoSom* som,bool debug,int vidas,int faseAtual,EstadoJogo estado,float fade,float tutorial,
+                  int selecaoPausa)
 {
     if(!f||!r||!s||!m||!b)return;
     al_clear_to_color(al_map_rgb(22,20,22));
@@ -170,6 +165,10 @@ void desenharCena(const Fase* f,const RecursosMapa* r,const Scooby* s,const Mari
     if(debug)debugDraw(f,s,m,b,som,r);
     hud(r,f,s,b,vidas,faseAtual,tutorial,estado);
 
+    /* O menu de pausa e desenhado antes do flip e por cima da cena congelada. */
+    if(estado==JOGO_PAUSADO)
+        desenharMenuPausaOverlay(r,selecaoPausa);
+
     if(fade>0)al_draw_filled_rectangle(0,0,LARGURA_TELA,ALTURA_TELA,al_map_rgba(0,0,0,(unsigned char)fminf(255,fade)));
     al_flip_display();
 }
@@ -189,6 +188,6 @@ void desenharTelaFinal(EstadoJogo estado,const RecursosMapa* r)
 void desenharCarregando(ALLEGRO_DISPLAY* display,ALLEGRO_FONT* fonte)
 {
     if(!display)return;al_set_target_backbuffer(display);al_clear_to_color(al_map_rgb(18,17,20));
-    if(fonte)al_draw_text(fonte,al_map_rgb(245,235,215),640,345,ALLEGRO_ALIGN_CENTRE,"Carregando fase...");
+    if(fonte)al_draw_text(fonte,al_map_rgb(245,235,215),640,345,ALLEGRO_ALIGN_CENTRE,"Carregando recursos...");
     al_flip_display();
 }
