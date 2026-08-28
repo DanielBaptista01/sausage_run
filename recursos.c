@@ -197,29 +197,28 @@ bool carregarRecursosFase(RecursosMapa* recursos,
     {
         if (indiceFase == 3)
         {
-            ALLEGRO_BITMAP* existente =
-                carregarBitmapFlexivel(fase->caminhoObjetos);
-
             /*
-             * A folha antiga do quarto possui resolucao baixa demais e
-             * ficava extremamente pixelizada ao ser ampliada. Quando isso
-             * ocorre usamos a composicao HD gerada pelo projeto.
+             * IMPORTANTE:
+             *
+             * O layout fisico/visual atual da Fase 4 usa os source rectangles
+             * definidos para a folha HD criada em quarto_assets.c.
+             *
+             * mapa/quarto_objetos.png possui outro atlas/layout. Carregar esse
+             * PNG e aplicar os source rectangles da folha procedural fazia
+             * exatamente o bug visto no jogo: fatias de cama, berco e armario
+             * desenhadas em blocos separados.
+             *
+             * Portanto a Fase 4 usa UMA unica fonte visual coerente. Se no
+             * futuro o PNG for adotado novamente, seus crops devem ser medidos
+             * e configurados especificamente; nunca misturados com outro atlas.
              */
-            if (existente &&
-                al_get_bitmap_width(existente) >= 512 &&
-                al_get_bitmap_height(existente) >= 400)
-            {
-                fase->folhaObjetos = existente;
-            }
-            else
-            {
-                if (existente)
-                    al_destroy_bitmap(existente);
+            fase->folhaObjetos = criarFolhaQuartoProcedural();
 
-                printf("Quarto: sheet de baixa resolucao descartada; "
-                       "usando composicao HD.\n");
-
-                fase->folhaObjetos = criarFolhaQuartoProcedural();
+            if (fase->folhaObjetos)
+            {
+                printf("Quarto: atlas HD interno carregado (%dx%d).\n",
+                       al_get_bitmap_width(fase->folhaObjetos),
+                       al_get_bitmap_height(fase->folhaObjetos));
             }
         }
         else
