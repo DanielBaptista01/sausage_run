@@ -1,190 +1,91 @@
 #include "jogo.h"
 
-static bool pixelOpaco(const ALLEGRO_LOCKED_REGION* lock, int x, int y)
-{
-    const unsigned char* p =
-        (const unsigned char*)lock->data + y * lock->pitch + x * 4;
-    return p[3] > 20;
-}
-
 /*
- * Retorna o bounding box da UNIAO dos componentes significativos da celula.
+ * As folhas dos personagens sao grades 4x4, mas algumas possuem dimensoes
+ * como 1254x1254. Nesses casos 1254/4 nao e inteiro.
  *
- * A versao anterior mantinha somente o maior componente conectado. Isso
- * funcionava para remover pequenos pixels vindos da celula vizinha, mas era
- * incorreto para sprites legitimamente compostas por partes desconectadas.
- * Nas folhas carry, especialmente DIRECAO_RIGHT, cabeca/orelha/bola podem
- * formar componentes separados e a parte superior acabava descartada.
+ * O erro anterior vinha de duas abordagens incorretas:
+ *  - usar frameW/frameH inteiros e repetir 313 pixels, deixando o erro de
+ *    arredondamento acumular a partir da segunda/terceira celula;
+ *  - tentar recortar cada celula pelo alpha, o que podia interpretar pixels
+ *    residuais da linha vizinha como parte legitima do personagem.
  *
- * Agora:
- * 1) medimos todos os componentes alfa da celula;
- * 2) descobrimos a area do maior;
- * 3) preservamos TODOS os componentes relevantes;
- * 4) descartamos apenas fragmentos muito pequenos (bleed de frame vizinho).
+ * A grade agora e calculada pelos LIMITES proporcionais da folha inteira:
+ *   x0 = floor(frame     * largura / 4)
+ *   x1 = floor((frame+1) * largura / 4)
+ * e o mesmo para Y.
+ *
+ * Dessa forma os pixels excedentes sao distribuidos entre as celulas e as
+ * 16 regioes cobrem a folha exatamente, sem sobreposicao e sem buracos.
+ * Nenhum algoritmo de alpha expande ou reduz o source rectangle.
  */
-static SourceRect componentesSignificativos(const ALLEGRO_LOCKED_REGION* lock,
-                                             int cellX, int cellY,
-                                             int cellW, int cellH)
+static SourceRect sourceGrade(const Animacao* a,
+                              int larguraFolha,
+                              int alturaFolha,
+                              int direcao,
+                              int frame)
 {
-    SourceRect fallback = {cellX + 1, cellY + 1, cellW - 2, cellH - 2};
-    const int total = cellW * cellH;
+    int linha = a->linhaDirecao[direcao];
 
-    unsigned char* visitado = (unsigned char*)calloc((size_t)total, 1);
-    int* fila = (int*)malloc((size_t)total * sizeof(int));
-    int* areas = (int*)malloc((size_t)total * sizeof(int));
-    int* minXs = (int*)malloc((size_t)total * sizeof(int));
-    int* minYs = (int*)malloc((size_t)total * sizeof(int));
-    int* maxXs = (int*)malloc((size_t)total * sizeof(int));
-    int* maxYs = (int*)malloc((size_t)total * sizeof(int));
+    int x0 = (frame * larguraFolha) / QTD_FRAMES;
+    int x1 = ((frame + 1) * larguraFolha) / QTD_FRAMES;
+    int y0 = (linha * alturaFolha) / QTD_DIRECOES;
+    int y1 = ((linha + 1) * alturaFolha) / QTD_DIRECOES;
 
-    if (!visitado || !fila || !areas || !minXs || !minYs || !maxXs || !maxYs)
-    {
-        free(visitado); free(fila); free(areas);
-        free(minXs); free(minYs); free(maxXs); free(maxYs);
-        return fallback;
-    }
-
-    const int dx[8] = {1,-1,0,0,1,1,-1,-1};
-    const int dy[8] = {0,0,1,-1,1,-1,1,-1};
-
-    int qtdComponentes = 0;
-    int maiorArea = 0;
-
-    for (int ly = 0; ly < cellH; ly++)
-    for (int lx = 0; lx < cellW; lx++)
-    {
-        int idx = ly * cellW + lx;
-
-        if (visitado[idx] || !pixelOpaco(lock, cellX + lx, cellY + ly))
-            continue;
-
-        int ini = 0, fim = 0;
-        fila[fim++] = idx;
-        visitado[idx] = 1;
-
-        int area = 0;
-        int minX = lx, minY = ly, maxX = lx, maxY = ly;
-
-        while (ini < fim)
-        {
-            int atual = fila[ini++];
-            int x = atual % cellW;
-            int y = atual / cellW;
-            area++;
-
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-
-            for (int k = 0; k < 8; k++)
-            {
-                int nx = x + dx[k];
-                int ny = y + dy[k];
-
-                if (nx < 0 || nx >= cellW || ny < 0 || ny >= cellH)
-                    continue;
-
-                int ni = ny * cellW + nx;
-
-                if (visitado[ni] || !pixelOpaco(lock, cellX + nx, cellY + ny))
-                    continue;
-
-                visitado[ni] = 1;
-                fila[fim++] = ni;
-            }
-        }
-
-        if (qtdComponentes < total)
-        {
-            areas[qtdComponentes] = area;
-            minXs[qtdComponentes] = minX;
-            minYs[qtdComponentes] = minY;
-            maxXs[qtdComponentes] = maxX;
-            maxYs[qtdComponentes] = maxY;
-            qtdComponentes++;
-        }
-
-        if (area > maiorArea)
-            maiorArea = area;
-    }
-
-    if (maiorArea < 20 || qtdComponentes <= 0)
-    {
-        free(visitado); free(fila); free(areas);
-        free(minXs); free(minYs); free(maxXs); free(maxYs);
-        return fallback;
-    }
-
-    /*
-     * Um componente legitimo precisa ter pelo menos 2% da area do maior,
-     * com piso minimo de 18 pixels. Isso preserva bola/orelha/cabeca e
-     * rejeita pontinhos isolados de sheets vizinhas.
-     */
-    int limiteArea = (int)(maiorArea * 0.02f);
-    if (limiteArea < 18) limiteArea = 18;
-
-    int unionMinX = cellW, unionMinY = cellH;
-    int unionMaxX = -1, unionMaxY = -1;
-    int mantidos = 0;
-
-    for (int i = 0; i < qtdComponentes; i++)
-    {
-        if (areas[i] < limiteArea)
-            continue;
-
-        if (minXs[i] < unionMinX) unionMinX = minXs[i];
-        if (minYs[i] < unionMinY) unionMinY = minYs[i];
-        if (maxXs[i] > unionMaxX) unionMaxX = maxXs[i];
-        if (maxYs[i] > unionMaxY) unionMaxY = maxYs[i];
-        mantidos++;
-    }
-
-    free(visitado); free(fila); free(areas);
-    free(minXs); free(minYs); free(maxXs); free(maxYs);
-
-    if (mantidos == 0 || unionMaxX < unionMinX || unionMaxY < unionMinY)
-        return fallback;
-
-    const int margem = 2;
-    int x0 = unionMinX - margem;
-    int y0 = unionMinY - margem;
-    int x1 = unionMaxX + margem;
-    int y1 = unionMaxY + margem;
-
-    if (x0 < 0) x0 = 0;
-    if (y0 < 0) y0 = 0;
-    if (x1 > cellW - 1) x1 = cellW - 1;
-    if (y1 > cellH - 1) y1 = cellH - 1;
-
-    return (SourceRect){
-        cellX + x0,
-        cellY + y0,
-        x1 - x0 + 1,
-        y1 - y0 + 1
-    };
+    return (SourceRect){x0, y0, x1 - x0, y1 - y0};
 }
 
 static bool validarAnimacao(const Animacao* a, const char* caminho)
 {
-    if (!a || !a->imagem) return false;
+    if (!a || !a->imagem)
+        return false;
 
     int w = al_get_bitmap_width(a->imagem);
     int h = al_get_bitmap_height(a->imagem);
 
     for (int d = 0; d < QTD_DIRECOES; d++)
-    for (int f = 0; f < QTD_FRAMES; f++)
     {
-        SourceRect r = a->source[d][f];
+        int ultimoFimX = 0;
 
-        if (r.sw <= 0 || r.sh <= 0 ||
-            r.sx < 0 || r.sy < 0 ||
-            r.sx + r.sw > w || r.sy + r.sh > h)
+        for (int f = 0; f < QTD_FRAMES; f++)
         {
-            printf("ERRO sourceRect %s dir=%d frame=%d [%d,%d,%d,%d] folha=%dx%d\n",
-                   caminho,d,f,r.sx,r.sy,r.sw,r.sh,w,h);
+            SourceRect r = a->source[d][f];
+
+            if (r.sw <= 0 || r.sh <= 0 ||
+                r.sx < 0 || r.sy < 0 ||
+                r.sx + r.sw > w || r.sy + r.sh > h)
+            {
+                printf("ERRO sourceRect %s dir=%d frame=%d [%d,%d,%d,%d] folha=%dx%d\n",
+                       caminho, d, f, r.sx, r.sy, r.sw, r.sh, w, h);
+                return false;
+            }
+
+            /* As colunas de uma mesma linha precisam ser contiguas. */
+            if (r.sx != ultimoFimX)
+            {
+                printf("ERRO grade horizontal %s dir=%d frame=%d: esperado x=%d recebido x=%d\n",
+                       caminho, d, f, ultimoFimX, r.sx);
+                return false;
+            }
+
+            ultimoFimX = r.sx + r.sw;
+        }
+
+        if (ultimoFimX != w)
+        {
+            printf("ERRO grade horizontal %s dir=%d termina em %d, folha=%d\n",
+                   caminho, d, ultimoFimX, w);
             return false;
         }
+    }
+
+    /* Verifica tambem que as quatro linhas ocupam exatamente a altura. */
+    for (int linha = 0; linha < QTD_DIRECOES; linha++)
+    {
+        int y0 = (linha * h) / QTD_DIRECOES;
+        int y1 = ((linha + 1) * h) / QTD_DIRECOES;
+        if (y1 <= y0)
+            return false;
     }
 
     return true;
@@ -197,11 +98,14 @@ bool carregarAnimacao(Animacao* a,
                       float anchorX,
                       float anchorY)
 {
-    if (!a) return false;
-    memset(a,0,sizeof(*a));
+    if (!a)
+        return false;
+
+    memset(a, 0, sizeof(*a));
 
     a->imagem = carregarBitmapFlexivel(caminho);
-    if (!a->imagem) return false;
+    if (!a->imagem)
+        return false;
 
     int w = al_get_bitmap_width(a->imagem);
     int h = al_get_bitmap_height(a->imagem);
@@ -209,11 +113,7 @@ bool carregarAnimacao(Animacao* a,
     a->framesPorLinha = QTD_FRAMES;
     a->linhasDirecao = QTD_DIRECOES;
 
-    /*
-     * frameW/frameH sao calculados POR BITMAP. Assim cada uma das cinco
-     * folhas carry pode possuir dimensoes diferentes de idle/walk/run sem
-     * depender de FRAME_SPRITE global.
-     */
+    /* Dimensoes nominais apenas para diagnostico/compatibilidade. */
     a->frameW = w / QTD_FRAMES;
     a->frameH = h / QTD_DIRECOES;
     a->margemX = 0;
@@ -228,56 +128,47 @@ bool carregarAnimacao(Animacao* a,
 
     if (a->frameW < 16 || a->frameH < 16)
     {
-        printf("ERRO sheet pequena: %s %dx%d\n", caminho,w,h);
+        printf("ERRO sheet pequena: %s %dx%d\n", caminho, w, h);
         al_destroy_bitmap(a->imagem);
-        a->imagem=NULL;
+        a->imagem = NULL;
         return false;
     }
 
-    ALLEGRO_LOCKED_REGION* lock =
-        al_lock_bitmap(a->imagem,
-                       ALLEGRO_PIXEL_FORMAT_ABGR_8888_LE,
-                       ALLEGRO_LOCK_READONLY);
-
-    for (int d=0; d<QTD_DIRECOES; d++)
-    for (int f=0; f<QTD_FRAMES; f++)
+    for (int d = 0; d < QTD_DIRECOES; d++)
     {
-        int cellX = a->margemX + f * (a->frameW + a->gapX);
-        int cellY = a->margemY + a->linhaDirecao[d] * (a->frameH + a->gapY);
-
-        if (lock)
-            a->source[d][f] = componentesSignificativos(lock,cellX,cellY,a->frameW,a->frameH);
-        else
-            a->source[d][f] = (SourceRect){cellX,cellY,a->frameW,a->frameH};
+        for (int f = 0; f < QTD_FRAMES; f++)
+            a->source[d][f] = sourceGrade(a, w, h, d, f);
     }
 
-    if (lock)
-        al_unlock_bitmap(a->imagem);
+    a->frameAtual = 0;
+    a->acumulador = 0;
+    a->tempoFrame = tempoFrame;
+    a->escalaVisual = escalaVisual;
+    a->anchorNormX = anchorX;
+    a->anchorNormY = anchorY;
+    a->ultimoFrameSom = -1;
 
-    a->frameAtual=0;
-    a->acumulador=0;
-    a->tempoFrame=tempoFrame;
-    a->escalaVisual=escalaVisual;
-    a->anchorNormX=anchorX;
-    a->anchorNormY=anchorY;
-    a->ultimoFrameSom=-1;
-
-    if (!validarAnimacao(a,caminho))
+    if (!validarAnimacao(a, caminho))
     {
         al_destroy_bitmap(a->imagem);
-        a->imagem=NULL;
+        a->imagem = NULL;
         return false;
     }
 
-    printf("Sprite OK: %s folha=%dx%d celula=%dx%d resto=%d,%d | RIGHT:",
-           caminho,w,h,a->frameW,a->frameH,
-           w-a->frameW*QTD_FRAMES,
-           h-a->frameH*QTD_DIRECOES);
-
-    for (int f=0; f<QTD_FRAMES; f++)
+    printf("Sprite OK: %s folha=%dx%d grade proporcional 4x4 | ", caminho, w, h);
+    printf("linhasY=");
+    for (int linha = 0; linha < QTD_DIRECOES; linha++)
     {
-        SourceRect r=a->source[DIRECAO_RIGHT][f];
-        printf(" f%d=[%d,%d,%d,%d]",f,r.sx,r.sy,r.sw,r.sh);
+        int y0 = (linha * h) / QTD_DIRECOES;
+        int y1 = ((linha + 1) * h) / QTD_DIRECOES;
+        printf(" L%d[%d..%d)", linha, y0, y1);
+    }
+    printf(" | RIGHT:");
+
+    for (int f = 0; f < QTD_FRAMES; f++)
+    {
+        SourceRect r = a->source[DIRECAO_RIGHT][f];
+        printf(" f%d=[%d,%d,%d,%d]", f, r.sx, r.sy, r.sw, r.sh);
     }
     printf("\n");
 
@@ -286,35 +177,41 @@ bool carregarAnimacao(Animacao* a,
 
 void reiniciarAnimacao(Animacao* a)
 {
-    if(!a)return;
-    a->frameAtual=0;
-    a->acumulador=0;
-    a->ultimoFrameSom=-1;
+    if (!a)
+        return;
+
+    a->frameAtual = 0;
+    a->acumulador = 0;
+    a->ultimoFrameSom = -1;
 }
 
-void atualizarAnimacaoLoop(Animacao* a,float dt)
+void atualizarAnimacaoLoop(Animacao* a, float dt)
 {
-    if(!a||!a->imagem||a->tempoFrame<=0)return;
-    a->acumulador+=dt;
+    if (!a || !a->imagem || a->tempoFrame <= 0)
+        return;
 
-    while(a->acumulador>=a->tempoFrame)
+    a->acumulador += dt;
+
+    while (a->acumulador >= a->tempoFrame)
     {
-        a->acumulador-=a->tempoFrame;
-        a->frameAtual=(a->frameAtual+1)%QTD_FRAMES;
+        a->acumulador -= a->tempoFrame;
+        a->frameAtual = (a->frameAtual + 1) % QTD_FRAMES;
     }
 }
 
-bool atualizarAnimacaoUmaVez(Animacao* a,float dt)
+bool atualizarAnimacaoUmaVez(Animacao* a, float dt)
 {
-    if(!a||!a->imagem)return true;
+    if (!a || !a->imagem)
+        return true;
 
-    a->acumulador+=dt;
-    if(a->acumulador>=a->tempoFrame)
+    a->acumulador += dt;
+
+    if (a->acumulador >= a->tempoFrame)
     {
-        a->acumulador-=a->tempoFrame;
+        a->acumulador -= a->tempoFrame;
         a->frameAtual++;
 
-        if(a->frameAtual>=QTD_FRAMES)
+        if (a->frameAtual >= QTD_FRAMES)
         {
             reiniciarAnimacao(a);
             return true;
@@ -324,41 +221,50 @@ bool atualizarAnimacaoUmaVez(Animacao* a,float dt)
     return false;
 }
 
-void desenharAnimacao(const Animacao* a,Direcao direcao,float x,float y)
+void desenharAnimacao(const Animacao* a,
+                      Direcao direcao,
+                      float x,
+                      float y)
 {
-    if(!a||!a->imagem)return;
+    if (!a || !a->imagem)
+        return;
 
-    int d=(int)direcao;
-    int f=a->frameAtual;
-    if(d<0||d>=QTD_DIRECOES)d=0;
-    if(f<0||f>=QTD_FRAMES)f=0;
+    int d = (int)direcao;
+    int f = a->frameAtual;
 
-    SourceRect r=a->source[d][f];
-    int cellX=a->margemX+f*(a->frameW+a->gapX);
-    int cellY=a->margemY+a->linhaDirecao[d]*(a->frameH+a->gapY);
+    if (d < 0 || d >= QTD_DIRECOES) d = DIRECAO_DOWN;
+    if (f < 0 || f >= QTD_FRAMES) f = 0;
 
-    float s=a->escalaVisual;
-    float origemVisualX=x-a->frameW*s*a->anchorNormX;
-    float origemVisualY=y-a->frameH*s*a->anchorNormY;
-    float dx=origemVisualX+(r.sx-cellX)*s;
-    float dy=origemVisualY+(r.sy-cellY)*s;
+    SourceRect r = a->source[d][f];
+    float s = a->escalaVisual;
+
+    /*
+     * O anchor e aplicado sobre a CELULA REAL daquele frame, e nao sobre
+     * frameW/frameH truncados. Assim uma celula de 314 px e uma de 313 px
+     * continuam apoiadas exatamente no mesmo ponto de chao.
+     */
+    float dw = r.sw * s;
+    float dh = r.sh * s;
+    float dx = x - dw * a->anchorNormX;
+    float dy = y - dh * a->anchorNormY;
 
     al_draw_scaled_bitmap(a->imagem,
-                          r.sx,r.sy,r.sw,r.sh,
-                          dx,dy,r.sw*s,r.sh*s,0);
+                          r.sx, r.sy, r.sw, r.sh,
+                          dx, dy, dw, dh, 0);
 }
 
-bool carregarSprites(Scooby* s,Maria* m)
+bool carregarSprites(Scooby* s, Maria* m)
 {
-    if(!s||!m)return false;
+    if (!s || !m)
+        return false;
 
-    if(!carregarAnimacao(&s->idle,"ScoobySprites/idle.png",.20f,.37f,.50f,.90f))return false;
-    if(!carregarAnimacao(&s->walk,"ScoobySprites/walk.png",.12f,.37f,.50f,.90f))return false;
-    if(!carregarAnimacao(&s->run, "ScoobySprites/run.png",.085f,.37f,.50f,.90f))return false;
-    if(!carregarAnimacao(&s->bark,"ScoobySprites/bark.png",.085f,.37f,.50f,.90f))return false;
-    if(!carregarAnimacao(&s->bite,"ScoobySprites/bite.png",.08f,.37f,.50f,.90f))return false;
+    if (!carregarAnimacao(&s->idle, "ScoobySprites/idle.png", .20f, .37f, .50f, .90f)) return false;
+    if (!carregarAnimacao(&s->walk, "ScoobySprites/walk.png", .12f, .37f, .50f, .90f)) return false;
+    if (!carregarAnimacao(&s->run,  "ScoobySprites/run.png", .085f, .37f, .50f, .90f)) return false;
+    if (!carregarAnimacao(&s->bark, "ScoobySprites/bark.png", .085f, .37f, .50f, .90f)) return false;
+    if (!carregarAnimacao(&s->bite, "ScoobySprites/bite.png", .08f, .37f, .50f, .90f)) return false;
 
-    static const char* carry[QTD_CORES_BOLA]={
+    static const char* carry[QTD_CORES_BOLA] = {
         "ScoobySprites/littleBalls/yellow_dog.png",
         "ScoobySprites/littleBalls/green_dog.png",
         "ScoobySprites/littleBalls/purple_dog.png",
@@ -366,30 +272,26 @@ bool carregarSprites(Scooby* s,Maria* m)
         "ScoobySprites/littleBalls/red_dog.png"
     };
 
-    for(int i=0;i<QTD_CORES_BOLA;i++)
+    for (int i = 0; i < QTD_CORES_BOLA; i++)
     {
-        /*
-         * Cada cor e medida individualmente. O anchor permanece nos pes,
-         * mas o source rect inclui todos os componentes significativos,
-         * evitando o corte superior observado quando olha para a direita.
-         */
-        if(!carregarAnimacao(&s->carregar[i],carry[i],.14f,.37f,.50f,.90f))
+        /* Cada folha carry e medida de forma independente. */
+        if (!carregarAnimacao(&s->carregar[i], carry[i], .14f, .37f, .50f, .90f))
             return false;
     }
 
-    if(!carregarAnimacao(&m->idle,"mariaSprites/idle.png",.20f,.31f,.50f,.93f))return false;
-    if(!carregarAnimacao(&m->walk,"mariaSprites/walk.png",.13f,.31f,.50f,.93f))return false;
-    if(!carregarAnimacao(&m->run, "mariaSprites/run.png",.095f,.31f,.50f,.93f))return false;
-    if(!carregarAnimacao(&m->pick,"mariaSprites/pick.png",.11f,.31f,.50f,.93f))return false;
+    if (!carregarAnimacao(&m->idle, "mariaSprites/idle.png", .20f, .31f, .50f, .93f)) return false;
+    if (!carregarAnimacao(&m->walk, "mariaSprites/walk.png", .13f, .31f, .50f, .93f)) return false;
+    if (!carregarAnimacao(&m->run,  "mariaSprites/run.png", .095f, .31f, .50f, .93f)) return false;
+    if (!carregarAnimacao(&m->pick, "mariaSprites/pick.png", .11f, .31f, .50f, .93f)) return false;
 
     return true;
 }
 
 void destruirAnimacaoInterna(Animacao* a)
 {
-    if(a&&a->imagem)
+    if (a && a->imagem)
     {
         al_destroy_bitmap(a->imagem);
-        a->imagem=NULL;
+        a->imagem = NULL;
     }
 }
